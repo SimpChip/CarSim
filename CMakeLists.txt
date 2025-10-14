@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
-project(Oving4)
+project(CarSim)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 include(FetchContent)
 
@@ -15,5 +15,5 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(threepp)
 
-add_executable(threepp_demo main.cpp)
-target_link_libraries(threepp_demo PRIVATE threepp::threepp)
+add_executable(carsim main.cpp)
+target_link_libraries(carsim PRIVATE threepp::threepp)
