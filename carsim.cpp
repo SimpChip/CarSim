@@ -99,7 +99,7 @@ int main() {
     threepp::GLRenderer renderer(canvas.size());
     renderer.setClearColor(threepp::Color(0.5f,0.8f,1.f));
 
-    RaceGame race("C:/Users/Mella/Dev/CLionProjects/CarSimV0/resources/maps/checkpointu.png");
+    RaceGame race("newdawn");
     auto [startPos, startRot] = race.getStartPositionAndRotation();
     CarLogic carLogic(startPos, startRot);
 
@@ -137,49 +137,16 @@ int main() {
 
     threepp::Clock clock;
 
-    bool finishTriggered = false;
-    int lapCount = 0;
-    float lapStartTime = 0.0f;
-    float lapEndTime = 0.0f;
-    float raceStartTime = clock.getElapsedTime();
-
-    int checkpoints = race.checkpointMap.size();
-    int checkpointCount = 254;
-
     canvas.animate([&](){
         float dt = clock.getDelta();
 
         carLogic.update(dt);
 
-        handleMapCollisions(carLogic, race.raceMap, 0.8, 1, 1);
+        //handleMapCollisions(carLogic, race.raceMap, 0.8, 1, 1);
 
         const Vector3 prevPos = carLogic.getPreviousPosition();
         const Vector3 pos = carLogic.getPosition();
-        if (checkpointCount > 255-checkpoints) {
-            if (isCrossingFinishLine(prevPos, pos, race.checkpointMap.at(checkpointCount)))
-            {
-                auto checkTime = clock.getElapsedTime() - lapStartTime ;
-                std::cout << "Checkpoint " << 255-checkpointCount<< " finished! Time: " << checkTime << "s\n";
-                checkpointCount -= 1;
 
-            }
-        }
-        else if (isCrossingFinishLine(prevPos, pos, race.checkpointMap.at(255))) {
-            if (!finishTriggered) {
-               finishTriggered = true;
-               checkpointCount = 254;
-
-
-               lapEndTime = clock.getElapsedTime() - lapStartTime ;
-               lapCount++;
-               std::cout << "Lap " << lapCount << " finished! Time: " << lapEndTime << "s\n";
-
-               lapStartTime = clock.getElapsedTime();
-            }
-        }
-        else {
-            finishTriggered = false;
-        }
 
         gameScene.update(carLogic.getPosition(), carLogic.getRotation(), dt);
 

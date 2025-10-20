@@ -32,10 +32,15 @@ struct Checkpoint {
 class RaceGame
 {
     public:
-        std::vector<std::vector<int>> raceMap;
+        std::vector<uint8_t> roadMask;      // 1 bit per pixel
+        std::vector<uint8_t> obstacleMask;
+
         std::map<int, Checkpoint > checkpointMap;
         explicit RaceGame(const std::string& filename);
+        void setBit(std::vector<uint8_t>& mask, int x, int y, int width);
+        int getBit(const std::vector<uint8_t>& mask, int x, int y, int width);
         std::pair<Vector3, float> getStartPositionAndRotation() const;
+
     private:
         int width{};
         int height{};
