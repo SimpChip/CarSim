@@ -103,6 +103,7 @@ int main() {
     auto [startPos, startRot] = race.getStartPositionAndRotation();
     CarLogic carLogic(startPos, startRot);
 
+
     GameScene gameScene(carLogic.getPosition(),carLogic.getRotation(), race);
 
     canvas.onWindowResize([&](const threepp::WindowSize& size) {
@@ -141,7 +142,7 @@ int main() {
         float dt = clock.getDelta();
 
         carLogic.update(dt);
-
+        race.handleMapCollisions(carLogic);
         //handleMapCollisions(carLogic, race.raceMap, 0.8, 1, 1);
 
         const Vector3 prevPos = carLogic.getPreviousPosition();

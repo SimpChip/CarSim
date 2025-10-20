@@ -35,8 +35,9 @@ GameScene::GameScene(threepp::Vector3& carPos, float& carRotation, RaceGame& rac
         mapMat->side = threepp::Side::Double; // so you can see it from above
 
         auto mapMesh = threepp::Mesh::create(mapGeo, mapMat);
-        mapMesh->rotation.x = -M_PI / 2; // lay it flat on XZ plane
-        mapMesh->position.set(mapWidth / 2, 0, mapHeight / 2);
+        mapMesh->rotation.x = -M_PI / 2;// lay it flat on XZ plane
+        mapMesh->scale.z = -1.0f;
+        mapMesh->position.set(mapWidth/2, 0, mapHeight/2);
 
         scene->add(mapMesh);
 

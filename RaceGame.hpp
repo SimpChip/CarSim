@@ -7,6 +7,7 @@
 #include <map>
 #include <threepp/threepp.hpp>
 #include <cmath>
+#include <CarLogic.hpp>
 
 using Vector3 = threepp::Vector3;
 
@@ -37,13 +38,14 @@ class RaceGame
 
         std::map<int, Checkpoint > checkpointMap;
         explicit RaceGame(const std::string& filename);
-        void setBit(std::vector<uint8_t>& mask, int x, int y, int width);
-        int getBit(const std::vector<uint8_t>& mask, int x, int y, int width);
+        void handleMapCollisions(CarLogic& car);
+        void setBit(std::vector<uint8_t>& mask, int x, int y);
+        int getBit(const std::vector<uint8_t>& mask, int x, int y);
         std::pair<Vector3, float> getStartPositionAndRotation() const;
 
     private:
-        int width{};
-        int height{};
+        int width;
+        int height;
 
 };
 
