@@ -15,5 +15,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(threepp)
 
-add_executable(carsim main.cpp)
-target_link_libraries(carsim PRIVATE threepp::threepp)
+add_executable(CarSimulator carsim.cpp carLogic.cpp
+        RaceGame.cpp
+        GameScene.cpp)
+target_link_libraries(CarSimulator PRIVATE threepp::threepp)
+target_include_directories(CarSimulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(CarSimulator PRIVATE external)
