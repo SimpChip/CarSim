@@ -1,56 +1,13 @@
 
 #include <threepp/threepp.hpp>
 #include <CarLogic.hpp>
-#include <RaceGame.hpp>
-#include <GameScene.hpp>
+#include <MapLogic.hpp>
+#include <GameScene.cpp>
 #include <ctime>
 #include <cmath>
 
-void handleMapCollisions(CarLogic& car, const std::vector<std::vector<int>>& map, const float sandDrag, const float carLength, const float carWidth)
-{
-    const Vector3 prevPos = car.getPreviousPosition();
-    const Vector3 pos = car.getPosition();
-    const Vector3 movement = pos - prevPos;
+#define STB_IMAGE_IMPLEMENTATION
 
-    const float movementDist = movement.length();
-    if (movementDist < 0.0001f) return;
-
-    const Vector3 forward(std::sin(car.getRotation()), 0, std::cos(car.getRotation()));
-    const Vector3 right(forward.z, 0, -forward.x);
-    const int samples = static_cast<int>(movementDist * 10.0f) + 1;
-    const float halfWidth = carWidth / 2.0f;
-
-    bool sand = false;
-
-    for (int i = 1; i <= samples; ++i)
-    {
-        Vector3 stepPos = prevPos + movement * (static_cast<float>(i) / samples);
-
-        for (float w = -halfWidth; w <= halfWidth; w += 0.5f)
-        {
-            const Vector3 checkPoint = stepPos + forward * (carLength / 2.0f) + right * w;
-            const int tileX = std::clamp(static_cast<int>(checkPoint.x), 0, static_cast<int>(map[0].size() - 1));
-            const int tileZ = std::clamp(static_cast<int>(checkPoint.z), 0, static_cast<int>(map.size() - 1));
-            const int tile = map[tileZ][tileX];
-
-            if (tile == 0 || tile == 2) // Vegg eller ingenting
-            {
-                const float backDist = static_cast<float>(i - 1) / samples;
-                const Vector3 newPos = prevPos + movement * backDist;
-                car.setPosition(newPos);
-                car.stopCar();
-                return;
-            }
-            if (tile == 3) // Sand
-            {
-                sand = true;
-            }
-        }
-    }
-
-    if (sand)
-        car.applyBraking(sandDrag);
-}
 
 bool isCrossingFinishLine(const Vector3& prevPos, const Vector3& pos,
                           const Checkpoint& finishLine)
@@ -94,17 +51,18 @@ bool isCrossingFinishLine(const Vector3& prevPos, const Vector3& pos,
 }
 
 
+
 int main() {
     threepp::Canvas canvas("Race Instanced");
     threepp::GLRenderer renderer(canvas.size());
     renderer.setClearColor(threepp::Color(0.5f,0.8f,1.f));
+    std::string mapName = "trackdesign";
+    MapLogic race(mapName);
+    auto [carStartPos, carStartRot] = race.getStartPositionAndRotation();
+    CarLogic carLogic(carStartPos, carStartRot);
 
-    RaceGame race("newdawn");
-    auto [startPos, startRot] = race.getStartPositionAndRotation();
-    CarLogic carLogic(startPos, startRot);
 
-
-    GameScene gameScene(carLogic.getPosition(),carLogic.getRotation(), race);
+    GameScene gameScene(carStartPos, carStartRot, race, mapName);
 
     canvas.onWindowResize([&](const threepp::WindowSize& size) {
         gameScene.camera->aspect = size.aspect();
@@ -114,20 +72,20 @@ int main() {
 
     threepp::KeyAdapter adapter(threepp::KeyAdapter::Mode::KEY_PRESSED, [&](threepp::KeyEvent evt){
         switch(evt.key) {
+            case threepp::Key::Q: carLogic.applyBoost(100);
             case threepp::Key::W: carLogic.setAccelerationInput(1.0f); break;
             case threepp::Key::S: carLogic.setAccelerationInput(-1.0f); break;
             case threepp::Key::A: carLogic.setSteeringInput(1.0f); break;
             case threepp::Key::D: carLogic.setSteeringInput(-1.0f); break;
-            case threepp::Key::Q: carLogic.applyBoost(1.5); break;
         default: ;
         }
     });
 
     threepp::KeyAdapter adapterRelease(threepp::KeyAdapter::Mode::KEY_RELEASED, [&](threepp::KeyEvent evt){
         switch(evt.key) {
-        case threepp::Key::W: carLogic.setAccelerationInput(0.0f); break;
+        case threepp::Key::W:
         case threepp::Key::S: carLogic.setAccelerationInput(0.0f); break;
-        case threepp::Key::A: carLogic.setSteeringInput(0.0f); break;
+        case threepp::Key::A:
         case threepp::Key::D: carLogic.setSteeringInput(0.0f); break;
         default: ;
         }
@@ -136,22 +94,16 @@ int main() {
     canvas.addKeyListener(adapter);
     canvas.addKeyListener(adapterRelease);
 
+    std::cout << "Started Game, Have fun!"<< std::endl;
     threepp::Clock clock;
-
     canvas.animate([&](){
         float dt = clock.getDelta();
 
         carLogic.update(dt);
-        race.handleMapCollisions(carLogic);
-        //handleMapCollisions(carLogic, race.raceMap, 0.8, 1, 1);
-
-        const Vector3 prevPos = carLogic.getPreviousPosition();
-        const Vector3 pos = carLogic.getPosition();
-
-
+        race.handleMapCollisions(carLogic, dt);;
         gameScene.update(carLogic.getPosition(), carLogic.getRotation(), dt);
 
-        renderer.render(*gameScene.scene, *gameScene.camera);
+        renderer.render(*gameScene.scene_, *gameScene.camera);
     });
 
     return 0;

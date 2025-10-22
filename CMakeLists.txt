@@ -14,10 +14,16 @@ FetchContent_Declare(
         GIT_TAG ada259b72435e380c8e3def429fc8001233b1a8f
 )
 FetchContent_MakeAvailable(threepp)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-add_executable(CarSimulator carsim.cpp carLogic.cpp
-        RaceGame.cpp
-        GameScene.cpp)
+add_executable(CarSimulator carsim.cpp CarLogic.hpp
+        MapLogic.hpp
+        GameScene.cpp
+        ResourceManager.hpp
+)
 target_link_libraries(CarSimulator PRIVATE threepp::threepp)
 target_include_directories(CarSimulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(CarSimulator PRIVATE external)
+
+file(COPY ${CMAKE_SOURCE_DIR}/resources DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+target_compile_definitions(CarSimulator PUBLIC DATA_DIR="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources")
