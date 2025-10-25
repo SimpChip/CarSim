@@ -178,6 +178,8 @@ public:
         int pz = static_cast<int>(car.getPosition().z / scale_);
         // std::cout <<"z" << pz << " ---> s" << scaledwidth_ << std::endl;
         // std::cout <<"x" << px << " ---> s" << scaledheight_ << std::endl;
+
+
         if (px < 0 or pz < 0 or px >= scaledwidth_ or pz >= scaledheight_) {
             std::cout << "OUT OF BOUNDS?!?!??" << std::endl;
             car.setPosition(prevPos);
@@ -216,8 +218,6 @@ public:
         // Search the scaled map for the first pixel where a road bit is set
         for (int y = 0; y < scaledheight_; ++y) {
             for (int x = 0; x < scaledwidth_; ++x) {
-                // Check if the current mask coordinate (x, y) is road
-                // Assumes 'getBit' is available and correctly uses 'scaledwidth_'
                 if (getBit(roadMask_, x, y)) {
                     float startX = std::max(100.0f, (static_cast<float>(x) + 0.5f) * scale_);
                     float startZ = std::max(100.0f, (static_cast<float>(y) + 0.5f) * scale_);
@@ -231,8 +231,6 @@ public:
             }
         }
 
-        // Fallback: If no road is found (e.g., mask is empty or all black),
-        // fall back to a safe default position (like the original one, but centered).
         Vector3 fallbackPos{
             static_cast<float>(scaledwidth_ * scale_) / 2.0f + 100.f,
             0.0f,

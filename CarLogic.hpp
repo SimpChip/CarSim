@@ -16,20 +16,30 @@ using Vector3 = threepp::Vector3;
 class CarLogic {
 
     public:
+
+        //Position
         Vector3 position_ = Vector3(0, 0, 0);
         Vector3 previousPosition_ = Vector3(0, 0, 0);
         Vector3 velocity_ = Vector3(0, 0, 0);
         float rotation_ = 0;
-
         float accelerationInput = 0;
-        float steeringInput = 0;
 
+        //steering
+        float targetSteeringInput = 0.0f;
+        float currentSteeringInput = 0.0f;
+        bool isSteeringLeftActive = false;
+        bool isSteeringRightActive = false;
+
+
+
+
+        // Constants
         float worldScale = 200.0f;
-        float maxSpeed = 50.0f * worldScale;
         float accelerationSpeed = 5.0f * worldScale;
-        float maxTurnRate = 2;
-
-        float sideFriction = 0.94f;
+        float maxSpeed = 10.0f * worldScale;
+        float steeringEaseRate = 5.0f;
+        float boostFactor_ = 1;
+        float sideFriction = 0.96f;
         float drag = 0.98;
 
         CarLogic(Vector3 startPos, float rotation) : position_(startPos) , rotation_(rotation)
@@ -41,29 +51,67 @@ class CarLogic {
         Vector3 getPreviousPosition() const { return previousPosition_; }
 
         float getRotation() { return rotation_; }
+        float getCurrentSteeringInput() { return currentSteeringInput; }
         Vector3 getVelocity() const { return velocity_; }
 
         void setAccelerationInput(float amount) { accelerationInput = std::clamp(amount, -1.0f, 1.0f); }
-        void setSteeringInput(float amount) { steeringInput = std::clamp(amount, -1.0f, 1.0f); }
 
         void applyBoost(float boostAmount) { velocity_ += forwardVector() * boostAmount; }
         void applyBraking(float factor, float dt) { velocity_ *= std::pow(factor, dt * 60.0f);}
         void stopCar() { velocity_ = Vector3(0,0,0); }
 
+        void updateTargetSteering()
+        {
+            float target = 0.0f;
+            if (isSteeringLeftActive && !isSteeringRightActive) {
+                target = 1.0f; // Left
+            } else if (isSteeringRightActive && !isSteeringLeftActive) {
+                target = -1.0f; // Right
+            }
+            targetSteeringInput = std::clamp(target, -1.0f, 1.0f);
+        }
+
+        void setSteeringLeftActive(bool state) {
+                isSteeringLeftActive = state;
+                updateTargetSteering();
+            }
+
+        void setSteeringRightActive(bool state) {
+                isSteeringRightActive = state;
+                updateTargetSteering();
+            }
+
         void updateRotation(float dt)
         {
             float speed = velocity_.length();
-            float speedFactor = std::min(speed / maxSpeed, 1.0f);
-            rotation_ += steeringInput * maxTurnRate * dt * (1.0f - 0.5f * speedFactor);
+            float step = steeringEaseRate * dt;
+            if (currentSteeringInput < targetSteeringInput) {
+                currentSteeringInput = std::min(currentSteeringInput + step, targetSteeringInput);
+            } else if (currentSteeringInput > targetSteeringInput) {
+                currentSteeringInput = std::max(currentSteeringInput - step, targetSteeringInput);
+            }
+            if (speed > 0.1f) {
+                std::cout << "speed: " << accelerationInput  << std::endl;
+                float speedFactor = std::pow(speed, 0.9)/200;
+                Vector3 forward = forwardVector();
+                float dotProduct = velocity_.dot(forward);
+                float directionMultiplier = (dotProduct < 0.0f) ? -1.0f : 1.0f;
+                rotation_ += currentSteeringInput * dt * speedFactor * directionMultiplier;
+            }
         }
 
         void updateVelocity(float dt)
         {
-            velocity_ += forwardVector() * (accelerationInput * accelerationSpeed * dt);
-            std::cout << velocity_.length() << std::endl;
+            if (boostFactor_ > 1) { boostFactor_ *= 0.995; }
+            velocity_ += forwardVector() * (accelerationInput * accelerationSpeed * boostFactor_ * dt);
+           // std::cout << velocity_.length() << std::endl;
 
-            if (velocity_.length() < 0.1f)
+            if (velocity_.length() < 10.f)
             {
+                velocity_ *= std::pow(drag, dt * 120.0f);
+
+
+            } else if (velocity_.length() < 1.f) {
                 velocity_ = Vector3(0,0,0);
             }
             //
@@ -102,10 +150,9 @@ class CarLogic {
             return Vector3(std::sin(rotation_), 0, std::cos(rotation_));
         }
 
-
-
-
-
+        void setBoostFactor(float i) {
+            boostFactor_ = i;
+        }
 };
 
 #endif //CARSIM_CARLOGIC_HPP

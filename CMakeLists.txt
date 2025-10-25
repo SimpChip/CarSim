@@ -20,6 +20,7 @@ add_executable(CarSimulator carsim.cpp CarLogic.hpp
         MapLogic.hpp
         GameScene.cpp
         ResourceManager.hpp
+        CarConfigManager.hpp
 )
 target_link_libraries(CarSimulator PRIVATE threepp::threepp)
 target_include_directories(CarSimulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
