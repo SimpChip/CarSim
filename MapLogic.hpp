@@ -15,27 +15,6 @@
 
 using Vector3 = threepp::Vector3;
 
-struct Checkpoint {
-    std::array<Vector3, 2> points;
-    int count = 0; // how many points added
-
-    void add(const Vector3 &p) {
-        if (count < 2) {
-            points[count++] = p;
-        }
-    }
-
-    [[nodiscard]] Vector3 midpoint() const {
-        if (count < 2) return {0, 0, 0};
-        return (points[0] + points[1]) / 2.0f;
-    }
-
-    [[nodiscard]] float angle() const {
-        const float angle = std::atan2(points[1].z - points[0].z, points[1].x - points[0].x);
-        return angle;
-    }
-};
-
 struct ImageInfo {
     int width, height, channels;
     std::string name;
@@ -46,7 +25,6 @@ class MapLogic {
 public:
     std::vector<uint8_t> roadMask_; // 1 bit per pixel
     std::vector<uint8_t> obstacleMask_;
-    std::map<int, Checkpoint> checkpointMap_;
     int width_{};
     int height_{};
     int scaledwidth_{};
@@ -104,6 +82,7 @@ public:
             for (int y = 0; y < sectionScaledHeight; ++y) {
                 for (int x = 0; x < sectionScaledWidth; ++x) {
                     int rSum = 0, gSum = 0;
+
                     for (int yy = 0; yy < scale_; ++yy) {
                         for (int xx = 0; xx < scale_; ++xx) {
                             int px = x * scale_ + xx;
@@ -120,9 +99,8 @@ public:
                     int divisor = scale_ * scale_;
                     int rAvg = rSum / divisor;
                     int gAvg = gSum / divisor;
-
                     int maskX = x + offsetX;
-                    int maskY = y + offsetY;
+                    int maskY = (sectionScaledHeight - 1 - y) + offsetY;
 
                     if (rAvg > 228) setBit(roadMask_, maskX, maskY); // Red channel for Road
                     if (gAvg > 228) setBit(obstacleMask_, maskX, maskY); // Green channel for Obstacle
@@ -175,23 +153,27 @@ public:
         const Vector3 pos = car.getPosition();
 
         int px = static_cast<int>(car.getPosition().x / scale_);
-        int pz = static_cast<int>(car.getPosition().z / scale_);
-        // std::cout <<"z" << pz << " ---> s" << scaledwidth_ << std::endl;
-        // std::cout <<"x" << px << " ---> s" << scaledheight_ << std::endl;
+        int py = static_cast<int>(car.getPosition().y / scale_);
+        //std::cout <<"cord " << px << " : "<< py<< std::endl;
 
+        float mapRadius = 0.5f * std::sqrt(scaledwidth_ * scaledwidth_ + scaledheight_ * scaledheight_);
+        float dx = pos.x - width_ / 2.0f;
+        float dy = pos.y - height_ / 2.0f;
+        float dist = std::sqrt(dx * dx + dy * dy);
 
-        if (px < 0 or pz < 0 or px >= scaledwidth_ or pz >= scaledheight_) {
-            std::cout << "OUT OF BOUNDS?!?!??" << std::endl;
+        if (dist > mapRadius) {
             car.setPosition(prevPos);
-            car.stopCar();
+            car.applyBounce();
+        } else if (px < 0 or py < 0 or px >= scaledwidth_ or py >= scaledheight_) {
+            car.applyBraking(0.9995, dt * 60);
         } else {
-            if (!getBit(roadMask_, px, pz)) {
-                car.applyBraking(0.999, dt * 60);
+            if (!getBit(roadMask_, px, py)) {
+                car.applyBraking(0.9995, dt * 60);
             }
 
-            if (getBit(obstacleMask_, px, pz)) {
+            if (getBit(obstacleMask_, px, py)) {
                 car.setPosition(prevPos);
-                car.stopCar();
+                car.applyBounce();
             }
         }
     }
@@ -220,9 +202,9 @@ public:
             for (int x = 0; x < scaledwidth_; ++x) {
                 if (getBit(roadMask_, x, y)) {
                     float startX = std::max(100.0f, (static_cast<float>(x) + 0.5f) * scale_);
-                    float startZ = std::max(100.0f, (static_cast<float>(y) + 0.5f) * scale_);
+                    float startY = std::max(100.0f, (static_cast<float>(y) + 0.5f) * scale_);
 
-                    Vector3 startPos{startX, 0.0f, startZ};
+                    Vector3 startPos{startX, startY, 0};
 
                     float startRot = 0.0f;
                     std::cout << "Car got start position: " << startPos.x << " . " << startPos.z << std::endl;
@@ -233,8 +215,8 @@ public:
 
         Vector3 fallbackPos{
             static_cast<float>(scaledwidth_ * scale_) / 2.0f + 100.f,
-            0.0f,
             static_cast<float>(scaledheight_ * scale_) / 2.0f + 100.f,
+            0.0f,
         };
 
         std::cerr << "Warning: No road found in roadMask_! Falling back to map center." << std::endl;

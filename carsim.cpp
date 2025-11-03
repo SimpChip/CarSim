@@ -12,14 +12,12 @@
 int main() {
     threepp::Canvas canvas("Race Instanced");
     threepp::GLRenderer renderer(canvas.size());
-    renderer.setClearColor(threepp::Color(0.5f,0.8f,1.f));
-    std::string mapName = "trackdesign";
+    renderer.setClearColor(threepp::Color::whitesmoke);
+    std::string mapName = "anotherOne";
     MapLogic mapLogic(mapName);
     auto [carStartPos, carStartRot] = mapLogic.getStartPositionAndRotation();
     CarLogic carLogic(carStartPos, carStartRot);
-
-
-    GameScene gameScene(carStartPos, carStartRot, mapLogic, mapName);
+    GameScene gameScene(mapName, mapLogic);
 
     canvas.onWindowResize([&](const threepp::WindowSize& size) {
         gameScene.camera->aspect = size.aspect();

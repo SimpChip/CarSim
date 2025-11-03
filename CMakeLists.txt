@@ -19,8 +19,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 add_executable(CarSimulator carsim.cpp CarLogic.hpp
         MapLogic.hpp
         GameScene.cpp
-        ResourceManager.hpp
-        CarConfigManager.hpp
+        CarVisuals.hpp
+        MapVisuals.hpp
 )
 target_link_libraries(CarSimulator PRIVATE threepp::threepp)
 target_include_directories(CarSimulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
