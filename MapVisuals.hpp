@@ -9,6 +9,8 @@
 #include <MapLogic.hpp>
 #include <random>
 
+
+
 class MapVisuals {
 public:
     MapLogic& mapLogic_;
@@ -64,21 +66,20 @@ private:
 
     std::shared_ptr<threepp::Mesh> createMapPart(int Mx,int My,std::shared_ptr<threepp::Texture> texture)
     {
-        int mapWidth = mapLogic_.scaledwidth_;
-        int mapHeight = mapLogic_.scaledheight_;
+        int mapWidth = mapLogic_.width_;
+        int mapHeight = mapLogic_.height_;
         totalHeight = static_cast<float>(My+1)*mapHeight;
         totalWidth = static_cast<float>(Mx+1)*mapWidth;
         auto mapSectionMat  = threepp::MeshStandardMaterial::create();
         mapSectionMat->flatShading = true;
 
-        auto mapSectionGeo = threepp::PlaneGeometry::create(mapWidth, mapHeight, mapWidth/10, mapHeight/10);
+        auto mapSectionGeo = threepp::PlaneGeometry::create(mapWidth, mapHeight, mapWidth/4, mapHeight/4);
         texture->magFilter = threepp::Filter::Linear;
         texture->minFilter = threepp::Filter::LinearMipmapLinear;
         texture->wrapS = threepp::TextureWrapping::Repeat;
         texture->wrapT = threepp::TextureWrapping::Repeat;
         texture->repeat.set(4, 4);
         mapSectionMat->map = texture;
-        mapSectionMat->side = threepp::Side::Double;
 
         auto mapSectionMesh = threepp::Mesh::create(mapSectionGeo, mapSectionMat);
         mapSectionMesh->position.set(mapWidth/2 + mapWidth * Mx , mapHeight/2 + mapHeight * My, -0.1 );
@@ -93,11 +94,11 @@ private:
 
             float zOffset = 0;
             const float baseZ = -0.1f;
-            int px = static_cast<int>((x + mapWidth/ 2) / mapLogic_.scale_);
-            int py = static_cast<int>((y +  mapHeight/ 2) / mapLogic_.scale_);
+            int px = static_cast<int>((x + mapWidth/ 2));
+            int py = static_cast<int>((y +  mapHeight/ 2));
 
-            if (px >= 0 && py >= 0 && px < mapLogic_.scaledwidth_ && py < mapLogic_.scaledheight_) {
-                if (mapLogic_.getBit(mapLogic_.roadMask_, px, py)) {
+            if (px >= 0 && py >= 0 && px < mapLogic_.width_ && py < mapLogic_.height_) {
+                if (mapLogic_.getBit(mapLogic_.roadMask_, px/mapLogic_.scale_, py/mapLogic_.scale_)) {
                     zOffset += 0.6f + rand()%2*0.1f;
                 }
             }
@@ -120,7 +121,6 @@ private:
         texture->wrapT = threepp::TextureWrapping::Repeat;
         texture->repeat.set(4, 4);
         material->map = texture;
-        material->side = threepp::Side::Double;
         material->flatShading = true;
         auto mesh = threepp::Mesh::create(geometry, material);
         const auto wireframe = threepp::Mesh::create(geometry, threepp::MeshBasicMaterial::create(
@@ -131,6 +131,7 @@ private:
 
         const auto position = mesh->geometry()->getAttribute<float>("position");
         position->setUsage(threepp::DrawUsage::Dynamic);
+
         for (size_t i = 0; i < position->count(); ++i) {
             float x = position->getX(i);
             float y = position->getY(i);
@@ -162,9 +163,8 @@ private:
         }
         position->needsUpdate();
 
-
         const std::string dir = std::string(DATA_DIR) + "/objects";
-        const int treeCount = 5014;
+        const int treeCount = 1000;
 
         struct ObjType {
             std::string path;
@@ -211,7 +211,6 @@ private:
                     continue;
                 }
             }
-
 
             std::string newDir = dir + "/" + types[random_type].path;
             auto instancedMesh = ol.load(newDir, true);

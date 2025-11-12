@@ -5,7 +5,6 @@
 #ifndef CARSIM_CARVISUALS_HPP
 #define CARSIM_CARVISUALS_HPP
 
-#pragma once
 #include <iostream>
 #include <threepp/threepp.hpp>
 #include <utility>
@@ -16,8 +15,7 @@
 class CarVisuals {
 public:
 
-    CarVisuals(const float scale, std::string objectName) : scale_(scale), objectName_(std::move(objectName))  {
-
+    CarVisuals(std::string objectName, CarLogic& carLogic, float scale) : objectName_(std::move(objectName)), scale_(scale)  {
         threepp::OBJLoader ol;
 
         const std::string base = std::string(DATA_DIR) + "/models/" + objectName_;
@@ -35,6 +33,21 @@ public:
         }
 
         carMesh->position = Vector3(0, 0, 0);
+        OBB carBox = carLogic.getOrientedBoundingBox();
+
+        float width = carBox.halfExtents.x * 2 / scale_;
+        float height = carBox.halfExtents.y * 2 / scale_;
+
+        auto geometry = threepp::BoxGeometry::create(width, height, 1.0f);
+        auto material = threepp::MeshBasicMaterial::create();
+        material->color = threepp::Color(0xffff00); // yellow
+        material->wireframe = true;
+
+        auto boxMesh = threepp::Mesh::create(geometry, material);
+
+        carMesh->add(boxMesh);
+
+
 
         //crazycar = 1.05f, 0.4f,  1.4f
         //camping =  1 , 0.5, 1.05

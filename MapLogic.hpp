@@ -10,6 +10,7 @@
 #include "filesystem"
 #include "threepp/threepp.hpp"
 #include "CarLogic.hpp"
+#include "SpatialGrid.hpp"
 #include "stb_image.h"
 #include "cmake-build-debug-mingw/_deps/threepp-src/src/external/nlohmann/nlohmann/json.hpp"
 
@@ -21,20 +22,45 @@ struct ImageInfo {
     unsigned char *data;
 };
 
+struct CheckPoint {
+    int id;
+    std::vector<Vector3> points;
+};
+
+enum class PickupType {
+    Coin,
+};
+
+struct Pickup {
+    PickupType type;
+    Vector3 position;
+    bool active = true;
+    float radius = 10.0f;
+    float respawnTimer = 0.0f;
+};
+
+
 class MapLogic {
 public:
     std::vector<uint8_t> roadMask_; // 1 bit per pixel
     std::vector<uint8_t> obstacleMask_;
+    std::map<int, std::vector<Vector3>> CheckPointMap_;
+    SpatialGrid<size_t> checkPointGrid_;
+    std::vector<Pickup> Pickups_;
+    SpatialGrid<size_t> pickupGrid_;
+    std::vector<size_t> inactivePickupIndices_;
+
     int width_{};
     int height_{};
     int scaledwidth_{};
     int scaledheight_{};
     int scale_ = 1;
+    int checkpoint = 255;
     std::string filename_;
 
-    explicit MapLogic(const std::string &filename) : filename_(filename) {
+    explicit MapLogic(const std::string &filename) : pickupGrid_(100), checkPointGrid_(100), filename_(filename) {
         std::cout << "RaceGame starts loading all " << filename_ << "files" << std::endl;
-        std::vector<ImageInfo> sectionMaps = loadImageData();
+        const std::vector<ImageInfo> sectionMaps = loadImageData();
 
         if (sectionMaps.empty()) {
             std::cerr << "Error: No map sections loaded. Aborting constructor." << std::endl;
@@ -42,8 +68,8 @@ public:
         }
 
         int maxSectionX = 0, maxSectionY = 0;
-        int sectionPixelWidth = sectionMaps[0].width;
-        int sectionPixelHeight = sectionMaps[0].height;
+        const int sectionPixelWidth = sectionMaps[0].width;
+        const int sectionPixelHeight = sectionMaps[0].height;
 
         for (const auto &section: sectionMaps) {
             if (section.width != sectionPixelWidth || section.height != sectionPixelHeight) {
@@ -64,54 +90,54 @@ public:
         scaledwidth_ = width_ / scale_;
         scaledheight_ = height_ / scale_;
 
-        size_t maskSizeBytes = (static_cast<size_t>(scaledwidth_) * scaledheight_ + 7) / 8;
+        const size_t maskSizeBytes = (static_cast<size_t>(scaledwidth_) * scaledheight_ + 7) / 8;
         roadMask_.resize(maskSizeBytes, 0);
         obstacleMask_.resize(maskSizeBytes, 0);
-
 
         for (const auto &section: sectionMaps) {
             std::cout << "Reading and Storing filedata from file: " << section.name << std::endl;
             auto [sectionX, sectionY] = parseMapPosition(section.name);
 
-            int sectionScaledWidth = section.width / scale_;
-            int sectionScaledHeight = section.height / scale_;
+            const int sectionScaledWidth = section.width / scale_;
+            const int sectionScaledHeight = section.height / scale_;
 
-            int offsetX = sectionX * sectionScaledWidth;
-            int offsetY = sectionY * sectionScaledHeight;
+            const int offsetX = sectionX * sectionScaledWidth;
+            const int offsetY = sectionY * sectionScaledHeight;
 
             for (int y = 0; y < sectionScaledHeight; ++y) {
                 for (int x = 0; x < sectionScaledWidth; ++x) {
-                    int rSum = 0, gSum = 0;
+                    const int px = x * scale_ + scale_ / 2;
+                    const int py = y * scale_ + scale_ / 2;
+                    const int idx = (py * section.width + px) * 3;
 
-                    for (int yy = 0; yy < scale_; ++yy) {
-                        for (int xx = 0; xx < scale_; ++xx) {
-                            int px = x * scale_ + xx;
-                            int py = y * scale_ + yy;
-                            int idx = (py * section.width + px) * 3; // *3 for RGB
+                    const int r = section.data[idx];
+                    const int g = section.data[idx + 1];
+                    const int b = section.data[idx + 2];
 
-                            if (idx + 1 < section.width * section.height * 3) {
-                                rSum += section.data[idx];
-                                gSum += section.data[idx + 1];
-                            }
-                        }
-                    }
-
-                    int divisor = scale_ * scale_;
-                    int rAvg = rSum / divisor;
-                    int gAvg = gSum / divisor;
                     int maskX = x + offsetX;
                     int maskY = (sectionScaledHeight - 1 - y) + offsetY;
 
-                    if (rAvg > 228) setBit(roadMask_, maskX, maskY); // Red channel for Road
-                    if (gAvg > 228) setBit(obstacleMask_, maskX, maskY); // Green channel for Obstacle
+                    if (r == 255 && g == 255) {
+                        CheckPointMap_[b].emplace_back(maskX, maskY, 0);
+                        setBit(roadMask_, maskX, maskY);
+                    } else if (r == 255) setBit(roadMask_, maskX, maskY);
+                    else if (r == 128) setBit(obstacleMask_, maskX, maskY);
+                    else if (b == 255) {
+                        Pickups_.emplace_back(Pickup{PickupType::Coin, Vector3(maskX, maskY, 0)});
+                        setBit(roadMask_, maskX, maskY);
+                    }
                 }
             }
             stbi_image_free(section.data);
         }
+
+        for (size_t i = 0; i < Pickups_.size(); ++i) {
+            pickupGrid_.insert(Pickups_[i].position, i);
+        }
         std::cout << "RaceGame is Created" << std::endl;
     }
 
-    std::pair<int, int> parseMapPosition(const std::string &filename) {
+    static std::pair<int, int> parseMapPosition(const std::string &filename) {
         // Expects format: "X_Y"
         size_t slash_pos = filename.find('/');
         std::string position_part = (slash_pos == std::string::npos) ? filename : filename.substr(0, slash_pos);
@@ -127,10 +153,9 @@ public:
         return {x, y};
     }
 
-    std::vector<ImageInfo> loadImageData() {
+    std::vector<ImageInfo> loadImageData() const {
         std::vector<ImageInfo> images;
-        const std::filesystem::path directoryPath{(std::string(DATA_DIR) + "/maps/" + filename_ + "/")};
-        for (const auto &entry: std::filesystem::directory_iterator(directoryPath)) {
+        for (const std::filesystem::path directoryPath{(std::string(DATA_DIR) + "/maps/" + filename_ + "/")}; const auto &entry: std::filesystem::directory_iterator(directoryPath)) {
             if (entry.is_directory()) {
                 int w, h, c;
                 unsigned char *data = stbi_load((entry.path().string() + "/md.png").c_str(), &w, &h, &c, 3);
@@ -146,17 +171,12 @@ public:
         return images;
     }
 
-    void handleMapCollisions(CarLogic &car, float dt) {
-        auto vel = car.getVelocity();
-
+    void handleMapCollisions(CarLogic& car, float dt) {
         const Vector3 prevPos = car.getPreviousPosition();
         const Vector3 pos = car.getPosition();
 
-        int px = static_cast<int>(car.getPosition().x / scale_);
-        int py = static_cast<int>(car.getPosition().y / scale_);
-        //std::cout <<"cord " << px << " : "<< py<< std::endl;
-
-        float mapRadius = 0.5f * std::sqrt(scaledwidth_ * scaledwidth_ + scaledheight_ * scaledheight_);
+        // Check if car is outside map bounds or radius
+        float mapRadius = 0.5f * std::sqrt(width_ * width_ + height_ * height_);
         float dx = pos.x - width_ / 2.0f;
         float dy = pos.y - height_ / 2.0f;
         float dist = std::sqrt(dx * dx + dy * dy);
@@ -164,16 +184,92 @@ public:
         if (dist > mapRadius) {
             car.setPosition(prevPos);
             car.applyBounce();
-        } else if (px < 0 or py < 0 or px >= scaledwidth_ or py >= scaledheight_) {
-            car.applyBraking(0.9995, dt * 60);
-        } else {
-            if (!getBit(roadMask_, px, py)) {
-                car.applyBraking(0.9995, dt * 60);
-            }
+            return;
+        }
 
-            if (getBit(obstacleMask_, px, py)) {
+        OBB carBox = car.getOrientedBoundingBox();
+        auto corners = carBox.getCorners();
+
+        // Check each corner of the car's bounding box against the obstacle mask
+        for (const auto& corner : corners) {
+            int cx = static_cast<int>(corner.x / scale_);
+            int cy = static_cast<int>(corner.y / scale_);
+
+            if (cx < 0 || cy < 0 || cx >= scaledwidth_ || cy >= scaledheight_) continue;
+
+            if (getBit(obstacleMask_, cx, cy)) {
                 car.setPosition(prevPos);
                 car.applyBounce();
+                return;
+            }
+        }
+
+        // Check center position for road validity
+        int px = static_cast<int>(pos.x / scale_);
+        int py = static_cast<int>(pos.y / scale_);
+
+        if (px < 0 || py < 0 || px >= scaledwidth_ || py >= scaledheight_) {
+            car.applyBraking(0.9995f, dt * 60);
+        } else if (!getBit(roadMask_, px, py)) {
+            car.applyBraking(0.9995f, dt * 60);
+        }
+    }
+
+
+
+    bool isPickupCollidingWithOBB(const Vector3& pickupPos, const OBB& box, float pickupRadius) {
+        Vector3 toPickup = pickupPos - box.center;
+        float xProj = toPickup.dot(box.right);
+        float yProj = toPickup.dot(box.forward);
+
+        return std::abs(xProj) <= box.halfExtents.x + pickupRadius &&
+               std::abs(yProj) <= box.halfExtents.y + pickupRadius;
+    }
+
+    void handlePickupCollisions(CarLogic& car, float dt) {
+        OBB carBox = car.getOrientedBoundingBox();
+
+        auto nearbyIndices = pickupGrid_.queryNearby(car.getPosition(), 2);
+
+        for (size_t idx : nearbyIndices) {
+            Pickup& pickup = Pickups_[idx];
+            if (!pickup.active) continue;
+
+            if (isPickupCollidingWithOBB(pickup.position, carBox, pickup.radius)) {
+                pickup.active = false;
+                pickup.respawnTimer = 5.0f;
+                inactivePickupIndices_.push_back(idx);
+                car.setBoostFactor(car.boostFactor_ + 1);
+            }
+        }
+
+        // Update inactive pickups and respawn them
+        auto it = inactivePickupIndices_.begin();
+        while (it != inactivePickupIndices_.end()) {
+            Pickup& pickup = Pickups_[*it];
+            pickup.respawnTimer -= dt;
+            if (pickup.respawnTimer <= 0.0f) {
+                pickup.active = true;
+                it = inactivePickupIndices_.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+
+
+    void handleCheckPointing(CarLogic &car, float dt) {
+        int px = static_cast<int>(car.getPosition().x / scale_);
+        int py = static_cast<int>(car.getPosition().y / scale_);
+
+        for (const auto finnishPos : CheckPointMap_[checkpoint]) {
+            if (finnishPos.x == px and finnishPos.y == py) {
+                std::cout << finnishPos.x << " " << finnishPos.y << std::endl;
+                std::cout << px << " " << py << std::endl;
+                checkpoint--;
+                std::cout << "FINISHED the thingu thango" << 255-checkpoint << std::endl;
+                break;
             }
         }
     }
@@ -197,7 +293,7 @@ public:
     }
 
     std::pair<Vector3, float> getStartPositionAndRotation() {
-        // Search the scaled map for the first pixel where a road bit is set
+        // Search the map for the first pixel where a road bit is set
         for (int y = 0; y < scaledheight_; ++y) {
             for (int x = 0; x < scaledwidth_; ++x) {
                 if (getBit(roadMask_, x, y)) {

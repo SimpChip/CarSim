@@ -12,6 +12,7 @@
 #include <regex>
 #include "CarVisuals.hpp"
 #include "MapVisuals.hpp"
+#include "PickupVisuals.hpp"
 
 class GameScene
 {
@@ -19,22 +20,27 @@ public:
     std::shared_ptr<threepp::Scene> scene_;
     std::unique_ptr<CarVisuals> carVisuals_;
     std::unique_ptr<MapVisuals> mapVisuals_;
+    std::unique_ptr<PickupVisuals> pickupVisuals_;
     std::shared_ptr<threepp::PerspectiveCamera> camera;
     std::shared_ptr<threepp::Mesh> colBox;
 
-    float scale_ = 10.f;
+    float scale_;
     float cameraUpdateInput = 0.f;
-    float cameraDistance_ = 5.f;
+    float cameraDistance_ = 2.f;
     float cameraHeight_ = 2.f;
 
-    GameScene(std::string mapName, MapLogic& mapLogic) {
+    GameScene(std::string mapName, float scale, MapLogic& mapLogic, CarLogic& carLogic) : scale_(scale) {
         scene_ = threepp::Scene::create();
 
-        carVisuals_ = std::make_unique<CarVisuals>(scale_, "cooltruck");
+        carVisuals_ = std::make_unique<CarVisuals>("cooltruck", carLogic, scale_);
+
         scene_->add(carVisuals_->getCarMesh());
 
         mapVisuals_ = std::make_unique<MapVisuals>(mapName, mapLogic);
         scene_->add(mapVisuals_->getMapMesh());
+
+        pickupVisuals_ = std::make_unique<PickupVisuals>(mapLogic);
+        pickupVisuals_->addToScene(scene_);
 
         scene_->fog = threepp::Fog(threepp::Color::whitesmoke, 1500, 3000);
 
@@ -62,6 +68,7 @@ public:
     {
         updateCameraDistance(dt);
         carVisuals_->update(carLogic, dt);
+        pickupVisuals_->update(dt);
 
         float camDistance = cameraDistance_ * scale_ + 3 * scale_;
         float camHeight = cameraHeight_ * scale_ + 2 * scale_;

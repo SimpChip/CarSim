@@ -5,19 +5,26 @@
 #include <GameScene.cpp>
 #include <ctime>
 #include <cmath>
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
+
 
 #define STB_IMAGE_IMPLEMENTATION
 
 
 int main() {
+
+
+    float globScale = 10.f;
     threepp::Canvas canvas("Race Instanced");
     threepp::GLRenderer renderer(canvas.size());
     renderer.setClearColor(threepp::Color::whitesmoke);
-    std::string mapName = "anotherOne";
+    std::string mapName = "anotherTwo";
     MapLogic mapLogic(mapName);
     auto [carStartPos, carStartRot] = mapLogic.getStartPositionAndRotation();
-    CarLogic carLogic(carStartPos, carStartRot);
-    GameScene gameScene(mapName, mapLogic);
+    CarLogic carLogic(carStartPos, carStartRot, globScale );
+    GameScene gameScene(mapName, globScale, mapLogic, carLogic);
 
     canvas.onWindowResize([&](const threepp::WindowSize& size) {
         gameScene.camera->aspect = size.aspect();
@@ -60,6 +67,8 @@ int main() {
 
         carLogic.update(dt);
         mapLogic.handleMapCollisions(carLogic, dt);
+        mapLogic.handlePickupCollisions(carLogic, dt);
+        mapLogic.handleCheckPointing(carLogic,dt);
         gameScene.update(carLogic, dt);
 
         renderer.render(*gameScene.scene_, *gameScene.camera);
