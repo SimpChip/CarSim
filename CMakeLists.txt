@@ -27,43 +27,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(imgui)
 
-# --- Executable ---
-add_executable(CarSimulator
-        carsim.cpp
-        CarLogic.hpp
-        GameScene.cpp
-        CarVisuals.hpp
-        MapVisuals.hpp
-        MapLogic.hpp
-        SpatialGrid.hpp
-        RoadLogic.hpp
-)
-
-# --- ImGui Sources ---
-target_sources(CarSimulator PRIVATE
-        ${imgui_SOURCE_DIR}/imgui.cpp
-        ${imgui_SOURCE_DIR}/imgui_draw.cpp
-        ${imgui_SOURCE_DIR}/imgui_tables.cpp
-        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
-)
-
-# --- Includes ---
-target_include_directories(CarSimulator PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${imgui_SOURCE_DIR}
-        ${imgui_SOURCE_DIR}/backends
-        external
-)
-
-# --- Linking ---
-target_link_libraries(CarSimulator PRIVATE
-        threepp::threepp
-        glfw
-        opengl32
-)
+add_subdirectory(src)
 
 # --- Resources ---
 file(COPY ${CMAKE_SOURCE_DIR}/resources DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-target_compile_definitions(CarSimulator PUBLIC DATA_DIR="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources")
+target_compile_definitions(RacingGame PUBLIC DATA_DIR="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources")
