@@ -8,6 +8,7 @@
 #include <threepp/threepp.hpp>
 #include "iostream"
 #include <cmath>
+#include "types/data.hpp"
 
 
 
@@ -74,16 +75,21 @@ class CarLogic {
         //redcar 2.1 4.66
         //colltruck 2 4
 
-
+        Vector3 velocity_ = Vector3(0, 0, 0);
 
         CarLogic(const Vector3 startPos, const float rotation, const float scale) :position_(startPos),  previousPosition_(startPos), rotation_(rotation), scale_(scale) {
             const float scaleFactor = scale * scale;
             accelerationSpeed = 2.0f * scaleFactor;
             brakeSpeed = 4.0f * scaleFactor;
-            maxSpeed = 7.0f * scaleFactor;
+            baseMaxSpeed = 7.0f * scaleFactor;
             rollingResistance = 0.5f;
-            drag = 0.000002f;
+            drag = 0.0002f;
         }
+
+        void setDragMultiplier(float m) { dragMultiplier_ = m; }
+        void setGripMultiplier(float m) { gripMultiplier_ = m; }
+        void setRollingResistanceMultiplier(float m) { rollingResistanceMultiplier_ = m; }
+        void setMaxSpeedMultiplier(float m) { maxSpeedMultiplier_ = m; }
 
         void setPosition(const Vector3 position) { position_ = position; }
         [[nodiscard]] Vector3 getPosition() const { return position_; }
@@ -106,15 +112,9 @@ class CarLogic {
         void setBoostFactor(const float i) { boostFactor_ = i; }
 
         void applyVelocity(const threepp::Vector3 vel) { velocity_ += vel;}
-        void applyBraking(const float factor, const float dt) { velocity_ *= std::pow(factor, dt * 60.0f);}
         void applyBounce() {velocity_ = velocity_.negate() * 0.8;}
-        void stopCar() { velocity_ = Vector3(0,0,0); }
 
-        [[nodiscard]] float getRotation() const { return rotation_; }
-        [[nodiscard]] float getCurrentSteeringInput() const { return currentSteeringInput; }
-        [[nodiscard]] Vector3 getVelocity() const { return velocity_; }
-        [[nodiscard]] float getSpeed() const { return velocity_.length(); }
-        [[nodiscard]] float getBoostFactor() const { return boostFactor_; }
+        void stopCar() { velocity_ = Vector3(0,0,0); }
 
         [[nodiscard]] OBB getOrientedBoundingBox() const {
             const auto fwd = forwardVector().normalize();
@@ -133,8 +133,11 @@ class CarLogic {
             position_ += velocity_ * dt;
         }
 
+        [[nodiscard]] CarData snapshot() const {
+            return { position_, previousPosition_, forwardVector(), rotation_, velocity_.length(), currentSteeringInput, boostFactor_,  };
+        }
 
-        [[nodiscard]] Vector3 forwardVector() const
+        [[nodiscard]] threepp::Vector3 forwardVector() const
         {
             return {std::sin(rotation_), std::cos(rotation_),0 };
         }
@@ -143,7 +146,7 @@ class CarLogic {
         float height_ = 4.4f;
         Vector3 position_;
         Vector3 previousPosition_;
-        Vector3 velocity_ = Vector3(0, 0, 0);
+
         float rotation_ = 0;
 
         float accelerationInput = 0;
@@ -155,12 +158,17 @@ class CarLogic {
         float scale_;
         float accelerationSpeed;
         float brakeSpeed;
-        float maxSpeed;
+        float baseMaxSpeed;
         float steeringEaseRate = 6.f;
         float boostFactor_ = 1;
 
         float rollingResistance;
         float drag;
+
+        float dragMultiplier_ = 1.0f;
+        float gripMultiplier_ = 1.0f;
+        float rollingResistanceMultiplier_ = 1.0f;
+        float maxSpeedMultiplier_ = 1.0f;
 
         void updateTargetSteering() {
             float target = 0.0f;
@@ -180,26 +188,24 @@ class CarLogic {
             } else if (currentSteeringInput > targetSteeringInput) {
                 currentSteeringInput = std::max(currentSteeringInput - step, targetSteeringInput);
             }
-            if (speed > 0.1f *scale_ * scale_) {
+            if (speed > 0.1f * scale_ * scale_) {
                 constexpr float maxRotationRate = 2.0f;
-
-                const float speedFactor = maxRotationRate / (1.0f + speed / maxSpeed);
+                const float speedFactor = maxRotationRate / (1.0f + speed / (baseMaxSpeed * maxSpeedMultiplier_));
                 const Vector3 forward = forwardVector();
                 const float dotProduct = velocity_.dot(forward);
                 const float directionMultiplier = (dotProduct < 0.0f) ? -1.0f : 1.0f;
-
                 rotation_ += currentSteeringInput * dt * speedFactor * directionMultiplier;
             }
         }
 
         void updateVelocity(const float dt) {
-            if (boostFactor_ > 1) { boostFactor_ *= 0.994; }
+            if (boostFactor_ > 1) boostFactor_ *= 0.994f;
 
             const float oldSpeed = velocity_.length();
             float finalAccelerationMagnitude;
 
             if (accelerationInput >= 0.0f) {
-                const float throttleReduction = 1.0f - (oldSpeed / maxSpeed);
+                const float throttleReduction = 1.0f - (oldSpeed / (baseMaxSpeed * maxSpeedMultiplier_));
                 finalAccelerationMagnitude = accelerationInput * accelerationSpeed * throttleReduction * boostFactor_;
             } else {
                 finalAccelerationMagnitude = accelerationInput * brakeSpeed;
@@ -210,21 +216,19 @@ class CarLogic {
 
             const float speed = velocity_.length();
             if (speed < 0.1f) {
-                velocity_ = Vector3(0,0,0);
+                velocity_ = Vector3(0, 0, 0);
                 return;
             }
 
             Vector3 dragDirection = velocity_;
             dragDirection.normalize();
 
-            const float quadraticDrag = speed * speed * drag;
-
+            const float quadraticDrag = speed * speed * drag * dragMultiplier_;
             float linearDrag = 0.0f;
             if (accelerationInput <= 0.0f) {
-                linearDrag = speed * rollingResistance;
+                linearDrag = speed * rollingResistance * rollingResistanceMultiplier_;
             }
             const float totalDragMagnitude = quadraticDrag + linearDrag;
-
             const Vector3 dragForce = dragDirection * totalDragMagnitude;
             velocity_ -= dragForce * dt;
         }
@@ -232,21 +236,30 @@ class CarLogic {
         void applySideFriction(float dt) {
             const Vector3 forward = forwardVector();
             const float forwardSpeed = velocity_.dot(forward);
-
             Vector3 lateral = velocity_ - forward * forwardSpeed;
+
 
             constexpr float BASE_GRIP = 0.98f;
             constexpr float DRIFT_SLIDE = 0.85f;
             const float steeringMagnitude = std::abs(currentSteeringInput);
 
-            const float dynamicFrictionFactor = BASE_GRIP - (BASE_GRIP - DRIFT_SLIDE) * steeringMagnitude;
+            float dynamicFrictionFactor = BASE_GRIP - (BASE_GRIP - DRIFT_SLIDE) * steeringMagnitude;
+
+            dynamicFrictionFactor *= gripMultiplier_;
+            dynamicFrictionFactor = std::clamp(dynamicFrictionFactor, 0.0f, 1.0f);
+
             lateral *= dynamicFrictionFactor;
             velocity_ = forward * forwardSpeed + lateral;
         }
 
         void clampSpeed() {
-            if (const float speed = velocity_.length(); speed > maxSpeed)
-                velocity_ = velocity_.normalize() * maxSpeed;
+            const float effectiveMaxSpeed = baseMaxSpeed * maxSpeedMultiplier_;
+            const float speed = velocity_.length();
+            if (speed > effectiveMaxSpeed) {
+                Vector3 n = velocity_;
+                n.normalize();
+                velocity_ = n * effectiveMaxSpeed;
+            }
         }
 };
 

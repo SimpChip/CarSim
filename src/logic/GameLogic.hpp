@@ -13,6 +13,7 @@
 #include "PickupLogic.hpp"
 
 #include "random"
+#include "types/data.hpp"
 
 struct CarEntity {
     CarLogic logic;
@@ -30,20 +31,19 @@ struct CarEntity {
 
 class GameLogic {
 public:
-    float globScale = 1;
+    float globScale = 8;
     MapLogic mapLogic_;
     CheckpointLogic checkpointLogic_;
     PickupLogic pickupLogic_;
     std::vector<std::unique_ptr<CarEntity>> cars_;
-
     float lapTimer_ = 0.f;
     float lastLapTime_ = 0.f;
     float lapCompleteTimer_ = 0.f;
 
     explicit GameLogic(const std::string &mapName, const int aiCount)
         : mapLogic_(mapName)
-        , checkpointLogic_(mapLogic_.getRoadSamples(), mapLogic_.road.getWidth(), 0)
-        , pickupLogic_(mapLogic_.getRoadSamples(), mapLogic_.road.getWidth())
+        , checkpointLogic_(mapLogic_.road.getSamples(), mapLogic_.road.getWidth(), 0)
+        , pickupLogic_(mapLogic_.road.getSamples(), mapLogic_.road.getWidth())
     {
         const int startIdx = checkpointLogic_.getRoadSampleStartIndex();
         auto [playerStart, playerRot, playerStartIdx] = mapLogic_.getStartPositionAndRotation(aiCount+1, startIdx, 4);
@@ -57,9 +57,6 @@ public:
             addAICar(carStartPos, carStartRot, carStartIdx, randomSkill);
         }
     }
-
-    float getCurrentLapTime() const { return lapTimer_; }
-    float getLastLapTime() const {return lastLapTime_;}
     void handleLapTimer(const float dt) {
         lapTimer_ += dt;
         if (checkpointLogic_.lapCompleted()) {
@@ -94,10 +91,22 @@ public:
 
     }
 
+    GameState snapshot() const {
+        GameState state;
+        state.scale = globScale;
+        for (auto& car : cars_) state.cars.push_back(car->logic.snapshot());
+        state.mapData = mapLogic_.snapshot();
+        state.pickups = pickupLogic_.snapshot();
+        state.checkpointsData = checkpointLogic_.snapshot();
+        state.lapTimer = lapTimer_;
+        state.lastLapTime = lastLapTime_;
+        return state;
+    }
+
     static void resolveCollisionImpulse(CarLogic& carA, CarLogic& carB) {
         Vector3 normal = carA.getPosition() - carB.getPosition();
         normal.normalize();
-        const Vector3 relativeVelocity = carA.getVelocity() - carB.getVelocity();
+        const Vector3 relativeVelocity = carA.velocity_ - carB.velocity_;
 
         const float velocityAlongNormal = relativeVelocity.dot(normal);
 
@@ -113,29 +122,25 @@ public:
         carB.applyVelocity((Vector3(0,0,0) - impulse)) ;
     }
 
-    CarEntity& addPlayerCar(const Vector3& pos, const float rot) {
-        auto entity = std::make_unique<CarEntity>(CarLogic(pos, rot, 10), nullptr);
+    void addPlayerCar(const Vector3& pos, const float rot) {
+        auto entity = std::make_unique<CarEntity>(CarLogic(pos, rot, globScale), nullptr);
         CarLogic& logicRef = entity->logic;
         entity->controller = std::make_unique<PlayerController>(logicRef);
         cars_.emplace_back(std::move(entity));
-        return *cars_.back();
     }
 
-    CarEntity& addAICar(const Vector3& pos, const float rot, const int startTargetidx, const float skill) {
-        auto entity = std::make_unique<CarEntity>(CarLogic(pos, rot, 10), nullptr);
+    CarEntity& getPlayerCar() const {
+        return *cars_[0];
+    }
+
+    void addAICar(const Vector3& pos, const float rot, const int startTargetidx, const float skill) {
+        auto entity = std::make_unique<CarEntity>(CarLogic(pos, rot, globScale), nullptr);
         CarLogic& logicRef = entity->logic;
-        entity->controller = std::make_unique<AIController>(mapLogic_.getRoadSamples(), startTargetidx , skill);
+        entity->controller = std::make_unique<AIController>(mapLogic_.road.getSamples(), startTargetidx , skill);
         cars_.emplace_back(std::move(entity));
-        return *cars_.back();
     }
 
-    std::vector<std::unique_ptr<CarEntity>>& getCars() { return cars_; }
 
-    MapLogic &getMapLogic()  { return mapLogic_; }
-    CheckpointLogic &getCpLogic()  { return checkpointLogic_; }
-    PickupLogic &getPickupLogic() { return pickupLogic_; }
-    CarLogic & getCarLogic(const int id) const { return cars_[id]->logic; }
-    CarEntity& getCar(const int id) const {return *cars_[id];}
 };
 
 

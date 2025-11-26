@@ -5,7 +5,7 @@
 #ifndef CARSIM_CHECKPOINTLOGIC_HPP
 #define CARSIM_CHECKPOINTLOGIC_HPP
 #include <threepp/threepp.hpp>
-#include <data/types.h>
+#include <types/data.hpp>
 #include <cmath>
 #include <algorithm>
 
@@ -39,8 +39,8 @@ class CheckpointLogic {
                 return {pos, rot};
         }
 
-        bool handleCheckpointPassing(const threepp::Vector3& currPos, const threepp::Vector3& prevPos) {
-            if (checkpoints_.empty()) return false;
+        void handleCheckpointPassing(const threepp::Vector3& currPos, const threepp::Vector3& prevPos) {
+            if (checkpoints_.empty()) return;
 
             if (currentCheckpointIndex_ < checkpoints_.size()) {
                 Checkpoint& cp = checkpoints_[currentCheckpointIndex_];
@@ -53,17 +53,16 @@ class CheckpointLogic {
                 if (hasCarPassedCheckpoint(currPos, prevPos, startCheckpoint_) && allCheckpointsPassed()) {
                     resetCheckpoints();
                     lapCompleted_ = true;
-                    return true;
                 }
             }
             lapCompleted_ = false;
-            return false;
         }
 
         [[nodiscard]] bool allCheckpointsPassed() const {
             return std::ranges::all_of(checkpoints_,
                 [](const auto& cp) { return cp.passed; });
         }
+
         [[nodiscard]] bool lapCompleted() const { return lapCompleted_; }
 
         void resetCheckpoints() {
@@ -71,9 +70,16 @@ class CheckpointLogic {
             currentCheckpointIndex_ = 0;
         }
 
-        [[nodiscard]] std::vector<Checkpoint> getCheckpoints() const { return checkpoints_; }
-        [[nodiscard]] Checkpoint getStartCheckpoint() const {return startCheckpoint_;}
-        [[nodiscard]] int getCurrentCpIndex() const {return currentCheckpointIndex_;}
+        CheckpointData snapshot() const {
+            CheckpointData data;
+            data.checkpoints = checkpoints_;
+            data.startpoint = startCheckpoint_;
+            data.allCheckPassed = lapCompleted_;
+            data.currentCheckpointIndex = currentCheckpointIndex_;
+            data.startCheckpointIndex = startCheckpointIndex_;
+
+            return data;
+        }
         [[nodiscard]] int getRoadSampleStartIndex() const {return roadSampleStartIndex_;}
 
     private:
@@ -86,10 +92,8 @@ class CheckpointLogic {
         bool lapCompleted_ = false;
 
         void generateCheckpoints(const std::vector<RoadSample>& samples, const float width) {
-
             int checkCount = 0;
             float accumulated = 0.0f;
-
             for (size_t i = 1; i < samples.size(); ++i) {
                 const threepp::Vector3 p0 = samples[i-1].pos;
                 const threepp::Vector3 p1 = samples[i].pos;

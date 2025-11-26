@@ -9,7 +9,6 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
-#include <GameLogic.hpp>
 
 class RaceHUD {
     float finishPopUpTimer = 0.f;
@@ -21,7 +20,7 @@ public:
         }
     }
 
-    void render(GameLogic& gameLogic) {
+    void render(const GameState& state) {
         auto formatTime = [](const float seconds) {
             const int totalMillis = static_cast<int>(seconds * 1000);
             const int minutes = totalMillis / 60000;
@@ -39,19 +38,19 @@ public:
         ImGui::SetWindowPos(ImVec2(15, 15));
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.f, 255));
         ImGui::SetWindowFontScale(20.f / ImGui::GetFontSize());
-        ImGui::Text("Current Lap Time: %s", formatTime(gameLogic.getCurrentLapTime()).c_str());
-        if (gameLogic.getLastLapTime() > 0) {
-            ImGui::Text("Last Lap: %s", formatTime(gameLogic.getLastLapTime()).c_str());
+        ImGui::Text("Current Lap Time: %s", formatTime(state.lapTimer).c_str());
+        if (state.lastLapTime > 0) {
+            ImGui::Text("Last Lap: %s", formatTime(state.lastLapTime).c_str());
             finishPopUpTimer = 3;
         }
         ImGui::Separator();
-        if (gameLogic.getCpLogic().allCheckpointsPassed()) {
+        if (state.checkpointsData.allCheckPassed) {
             ImGui::Text("Checkpoint: ALL PASSED");
         } else {
-            ImGui::Text("Checkpoint: %d / %d", gameLogic.getCpLogic().getCurrentCpIndex(), gameLogic.getCpLogic().getCheckpoints().size());
+            ImGui::Text("Checkpoint: %d / %d", state.checkpointsData.currentCheckpointIndex, state.checkpointsData.checkpoints.size());
         }
         if (finishPopUpTimer > 0) {
-            ImGui::Text("FINISHED A LAP?!??!?");
+            ImGui::Text("FINISHED A LAP?");
         }
         ImGui::PopStyleColor();
         ImGui::SetWindowFontScale(1.0f);

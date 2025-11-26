@@ -11,31 +11,30 @@
 class PickupVisuals {
 public:
     std::vector<std::shared_ptr<threepp::Group>> pickupMeshes_;
+    std::shared_ptr<threepp::Group> rootGroup_;
 
-    explicit PickupVisuals(const std::vector<Pickup>& pickups, const float scale)  {
+    explicit PickupVisuals(const std::vector<Pickup>& pickups, const float scale, ResourceManager& resources)  {
+        rootGroup_ = std::make_shared<threepp::Group>();
         threepp::OBJLoader ol;
         for (auto&pickup : pickups) {
             std::shared_ptr<threepp::Group> mesh;
             switch (pickup.type) {
                 case PickupType::Coin: {
                     std::string Dir = std::string(DATA_DIR) + "/objects/Pickups/coin.obj";
-                    mesh = ol.load(Dir, true);
+                    mesh = resources.loadPrototype(Dir);
                     break;
                 }
             }
-
             if (mesh) {
                 mesh->position.set(pickup.position.x * scale, pickup.position.y * scale, 0);
                 mesh->scale = Vector3(pickup.radius * 2.f,pickup.radius * 2.f, pickup.radius * 2.f);
+                rootGroup_->add(mesh);
                 pickupMeshes_.push_back(mesh);
             }
         }
     }
-
-    void addToScene(const std::shared_ptr<threepp::Scene>& scene) const {
-        for (auto& mesh : pickupMeshes_) {
-            scene->add(mesh);
-        }
+    void attachToScene(const std::shared_ptr<threepp::Scene>& scene) const {
+        scene->add(rootGroup_);
     }
 
     void update(const std::vector<Pickup>& pickups, const float dt) const {

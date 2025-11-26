@@ -23,7 +23,6 @@ public:
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         ImGui::StyleColorsDark();
-
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL3_Init("#version 150");
     }
@@ -43,12 +42,12 @@ public:
         ImGui::End();
     }
 
-    void renderCheckPointOverlay(GameLogic& gameLogic, const float dt) {
+    void renderCheckPointOverlay(const GameState& state, const float dt) {
         raceHUD_.update(dt);
-        raceHUD_.render(gameLogic);
+        raceHUD_.render(state);
     }
 
-static void renderStartTimer(float time, const float dt) {
+static void renderStartTimer(const float time, const float dt) {
     ImGui::Begin("Start Timer", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
 
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -61,6 +60,7 @@ static void renderStartTimer(float time, const float dt) {
     const int countdown = static_cast<int>(std::ceil(time));
     constexpr float fontSize = 100.0f;
     ImGui::SetWindowFontScale(fontSize / ImGui::GetFontSize());
+
 
     std::string timerText;
     if (countdown > 0) {
@@ -84,33 +84,105 @@ static void renderStartTimer(float time, const float dt) {
 
     ImGui::End();
 }
+    struct MainMenuResult {
+        bool startGame = false;
+        bool startMapMaker = false;
+        int aiCount = 0;
+    };
 
-    static bool renderMainMenu(std::string& selectedMap, std::string& selectedModel) {
-        bool startClicked = false;
-        ImGui::Begin("Main Menu");
+    static MainMenuResult renderMainMenu(std::string& selectedMap, std::string& selectedModel, const int currentAiCount) {
+        MainMenuResult result;
+        ImGui::Begin("Main Menu", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground);
 
+        ImGui::SetWindowFontScale(40 / ImGui::GetFontSize());
         ImGui::Text("Welcome to CarSim!");
         ImGui::Separator();
 
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        const ImVec2 windowSize = ImGui::GetWindowSize();
+
+        ImGui::SetWindowPos(ImVec2(
+            viewport->WorkPos.x + (viewport->WorkSize.x - windowSize.x) * 0.5f,
+            viewport->WorkPos.y + (viewport->WorkSize.y - windowSize.y) * 0.5f
+        ));
+
+        ImGui::SetNextWindowSize(windowSize);
+
+        constexpr float fontSize = 50.0f;
+        ImGui::SetWindowFontScale(fontSize / ImGui::GetFontSize());
         static int currentMap = 0;
         const char* maps[] = { "firstMap", "secondMap", "thirdMap", "fourthMap" };
         ImGui::Combo("Select Map", &currentMap, maps, IM_ARRAYSIZE(maps));
         selectedMap = maps[currentMap];
         ImGui::Separator();
-
         static int currentModel = 0;
-        const char* models[] = { "cooltruck", "redcar", "wheelcar", "policecary"};
+        const char* models[] = { "redcar", "cooltruck", "wheelcar", "policecary"};
         ImGui::Combo("Select Model", &currentModel, models, IM_ARRAYSIZE(models));
         selectedModel = models[currentModel];
 
+        static int newAiCount = currentAiCount;
+        ImGui::SliderInt("Bots", &newAiCount, 0, 120);
+        result.aiCount = newAiCount;
+
         if (ImGui::Button("Start Race")) {
-            startClicked = true;
+            result.startGame = true;
+        }
+        if (ImGui::Button("Start Map Maker")) {
+            result.startMapMaker = true;
         }
 
+        ImGui::SetWindowFontScale(1.0f);
         ImGui::End();
-        return startClicked;
+        return result;
     }
 
+    struct MakerMenuResult {
+        bool save = false;
+        bool undo = false;
+        bool clear = false;
+        bool goback = false;
+        bool looped = false;
+        int newMapSize = 100;
+    };
+
+    static MakerMenuResult renderMakerMenu(const std::vector<threepp::Vector3> &points, const int currentMapSize, const bool looped) {
+        MakerMenuResult result;
+        result.looped = looped;
+        ImGui::Begin("Map Maker""Race HUD", nullptr,
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground);
+        ImGui::SetWindowPos(ImVec2(0, 0));
+        if (ImGui::Button("Save")) {
+             result.save = true;
+        }
+        ImGui::Spacing();
+        if (ImGui::Button("Undo Last")) {
+            result.undo = true;
+        }
+        ImGui::Spacing();
+        if (ImGui::Button("Clear All")) {
+            result.clear = true;
+        }
+        ImGui::Spacing();
+        if (ImGui::Button("Go Back To Menu")) {
+            result.goback = true;
+        }
+        ImGui::Checkbox("Looped", &result.looped);
+        ImGui::Spacing();
+        ImGui::Separator();
+        static int newSize = currentMapSize;
+        ImGui::SliderInt("Map Size", &newSize, 50, 10000);
+        ImGui::Text("%.1f",newSize);// range 50–1000
+        result.newMapSize = newSize;
+        ImGui::Separator();
+        ImGui::Spacing();
+        for (const auto& point : points) {
+            ImGui::Text("X: %.2f , Y: %.2f", point.x, point.y);
+
+        }
+        ImGui::End();
+        return result;
+    }
     struct PauseResult {
         bool resume = false;
         bool quitToMenu = false;

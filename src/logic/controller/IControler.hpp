@@ -137,7 +137,7 @@ public:
             accelInput = 0.0f;
         }
 
-        if (car.getVelocity().length() < 20.0f) {
+        if (car.velocity_.length() < 20.0f) {
             accelInput = 1.0f;
         }
 

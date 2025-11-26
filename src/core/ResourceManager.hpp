@@ -2,7 +2,6 @@
 // Created by Mella on 21.10.2025.
 //
 
-#// ResourceManager.hpp
 #ifndef CARSIM_RESOURCEMANAGER_HPP
 #define CARSIM_RESOURCEMANAGER_HPP
 
@@ -10,11 +9,12 @@
 #include <unordered_map>
 #include <memory>
 
-// sketch — adapt to threepp API names in your project
 class ResourceManager {
 public:
     threepp::OBJLoader objLoader;
+    threepp::TextureLoader textureLoader;
     std::unordered_map<std::string, std::shared_ptr<threepp::Group>> prototypes;
+    std::unordered_map<std::string, std::shared_ptr<threepp::Texture>> textures;
 
     std::shared_ptr<threepp::Group> loadPrototype(const std::string &path) {
         auto it = prototypes.find(path);
@@ -25,18 +25,29 @@ public:
         return g;
     }
 
+    std::shared_ptr<threepp::Texture> loadTexture(const std::string &path) {
+        auto [it, inserted] = textures.try_emplace(path, nullptr);
+        if (!inserted) return it->second;
+        it->second = textureLoader.load(path, true);
+        return it->second;
+    }
+
     std::shared_ptr<threepp::Group> cloneInstance(const std::string &path) {
         auto proto = loadPrototype(path);
         return std::dynamic_pointer_cast<threepp::Group>(proto->clone(true));
+    }
+
+    void clear() {
+        prototypes.clear();
+        textures.clear();
     }
 
 private:
     static void computeBoundingForGroup(const threepp::Object3D* obj) {
         if (!obj) return;
 
-        if (auto mesh = dynamic_cast<const threepp::Mesh*>(obj)) {
+        if (const auto mesh = dynamic_cast<const threepp::Mesh*>(obj)) {
             if (mesh->geometry()) {
-                // geometry is a shared_ptr or raw pointer depending on API; adapt if needed
                 mesh->geometry()->computeBoundingSphere();
             }
         }

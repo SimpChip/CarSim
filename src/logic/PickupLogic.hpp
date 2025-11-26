@@ -6,16 +6,18 @@
 #define CARSIM_PICKUPLOGIC_HPP
 
 #include <threepp/threepp.hpp>
-#include <data/types.h>
+#include <types/data.hpp>
 #include <data/SpatialGrid.hpp>
 #include <CarLogic.hpp>
+
+
 class PickupLogic {
     public:
         PickupLogic(const std::vector<RoadSample>& samples, const float width): pickupGrid_(100) {
             generatePickups(samples, width);
         }
 
-        void handlePickupCollisions(CarLogic& car, const float dt) {
+        void handlePickupCollisions(const CarLogic& car, const float dt) {
             const OBB carBox = car.getOrientedBoundingBox();
 
             for (const auto nearbyIndices = pickupGrid_.queryNearby(car.getPosition(), 1); size_t idx : nearbyIndices) {
@@ -26,8 +28,6 @@ class PickupLogic {
                     pickup.active = false;
                     pickup.respawnTimer = 5.0f;
                     inactivePickupIndices_.push_back(idx);
-                    const float bfactor = car.getBoostFactor();
-                    car.setBoostFactor(bfactor + 6 * std::pow(0.4f,bfactor ));
                 }
             }
         }
@@ -48,6 +48,15 @@ class PickupLogic {
             }
 
         }
+
+        std::vector<Pickup> snapshot() const {
+            std::vector<Pickup> data;
+            for (auto& p : pickups_) {
+                data.push_back( p );
+            }
+            return data;
+        }
+
     private:
         std::vector<Pickup> pickups_;
         SpatialGrid<size_t> pickupGrid_;

@@ -44,10 +44,10 @@ public:
         } else {
             std::cout << "Car model file does not exist: " << carPath << "\n";
             carMesh = createPlaceholder(scale_, 2.f, 4.f, 1.f);
-            carMesh->rotation.x = -threepp::math::PI / 2.f;
         }
 
         carMesh->position = carStartPos;
+        carMesh->name = objectName;
 
         //crazycar = 1.05f, 0.4f,  1.4f
         //camping =  1 , 0.5, 1.05
@@ -61,48 +61,42 @@ public:
             { "wheel_br.obj", threepp::Vector3(-1.f, -1.05f, 0.5f), &wheelBackRMesh  },
         };
 
-        // after carMesh exists
         wheels.clear();
-        for (auto &wd : wheelDefs) {
-            const std::string wpath = base + "/" + wd.filename;
+        for (const auto &[filename, pos, target] : wheelDefs) {
+            const std::string wpath = base + "/" + filename;
             std::shared_ptr<threepp::Group> protoWheel = nullptr;
 
             if (std::filesystem::exists(wpath)) {
                 try {
-                    protoWheel = resources.loadPrototype(wpath); // this returns the cached prototype
+                    protoWheel = resources.loadPrototype(wpath);
                     if (!protoWheel) {
                         throw std::runtime_error("prototype null");
                     }
                 } catch (const std::exception &e) {
-                    std::cerr << "Error loading wheel prototype " << wd.filename << ": " << e.what() << "\n";
+                    std::cerr << "Error loading wheel prototype " << filename << ": " << e.what() << "\n";
                     protoWheel = createPlaceholder(scale_, 0.5f, 0.5f, 0.5f);
                 } catch (...) {
-                    std::cerr << "Unknown error loading wheel prototype " << wd.filename << "\n";
+                    std::cerr << "Unknown error loading wheel prototype " << filename << "\n";
                     protoWheel = createPlaceholder(scale_, 0.5f, 0.5f, 0.5f);
                 }
             } else {
-                std::cout << wd.filename << " is not implemented\n";
+                std::cout << filename << " is not implemented\n";
             }
 
             if (protoWheel) {
-                // deep-clone prototype so each car gets its own independent wheel instance
                 auto loadedWheel = std::dynamic_pointer_cast<threepp::Group>(protoWheel->clone(true));
                 if (!loadedWheel) {
-                    // fallback to placeholder if clone failed
                     loadedWheel = createPlaceholder(scale_, 0.5f, 0.5f, 0.5f);
                 }
 
                 auto steeringPivot = threepp::Group::create();
-                steeringPivot->position = wd.pos;
-
-                // add the cloned wheel to the pivot and pivot to the car mesh
+                steeringPivot->position = pos;
                 steeringPivot->add(loadedWheel);
                 carMesh->add(steeringPivot);
-
-                *(wd.target) = steeringPivot;
+                *(target) = steeringPivot;
                 wheels.push_back(steeringPivot);
             } else {
-                *(wd.target) = nullptr;
+                *(target) = nullptr;
             }
         }
     }
@@ -122,8 +116,8 @@ public:
             wheel->rotation.z = steerAngle;
         };
 
-        float wheelRadius = scale_;
-        float rollAmount = speed * dt / wheelRadius;
+        const float wheelRadius = scale_;
+        const float rollAmount = speed * dt / wheelRadius;
         auto applyWheelRoll = [&](const std::shared_ptr<threepp::Group> &wheelPivot, float sign = 1.0f) {
             if (!wheelPivot) return;
             if (wheelPivot->children.empty()) return;

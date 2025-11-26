@@ -5,14 +5,13 @@
 #define MAPLOGIC_HPP
 
 #include <fstream>
-#include "iostream"
 #include "threepp/threepp.hpp"
 #include "CarLogic.hpp"
 #include "RoadLogic.hpp"
-#include "data/types.h"
 #include <data/SpatialGrid.hpp>
 #include <utility>
-using Vector3 = threepp::Vector3;
+#include "types/data.hpp"
+
 
 enum class BorderType {
     Canyon,
@@ -30,9 +29,9 @@ class MapLogic {
 public:
     RoadLogic road;
 
-    int width_{};
-    int height_{};
-    int scale_ = 1;
+    short width_{};
+    short height_{};
+    short scale_ = 1;
     std::string filename_;
 
     SpatialGrid<WallSegment> wallGrid;
@@ -44,8 +43,6 @@ public:
         filename_(std::move(filename)),
         wallGrid(200.0f)
     {
-        std::cout << "RaceGame starts loading all " << filename_ << "files" << std::endl;
-
         if (filename_ == "firstMap") {
             width_ = 10000;
             height_ = 10000;
@@ -64,7 +61,7 @@ public:
             road.buildSmoothSamples();
             road.setLooped(true);
         }
-        else if (filename_ == "secondMap") { // long coastal run: stretched X, wider turns
+        else if (filename_ == "secondMap") {
             width_ = 15000;
             height_ = 15000;
             road.addPoint({500,  3000, 0});
@@ -82,7 +79,7 @@ public:
             road.buildSmoothSamples();
             road.setLooped(true);
         }
-        else if (filename_ == "thirdMap") { // compact technical: tighter, more zig-zags, smaller scale
+        else if (filename_ == "thirdMap") {
             width_ = 5000;
             height_ = 5000;
             road.addPoint({1200, 1200, 0});
@@ -97,32 +94,53 @@ public:
             road.addPoint({2000, 3400, 0});
             road.addPoint({1500, 3000, 0});
             road.addPoint({1300, 2200, 0});
+            road.addPoint({1000, 1700, 0});
             road.buildSmoothSamples();
             road.setLooped(true);
         }
         else if (filename_ == "fourthMap") {
             width_ = 10000;
             height_ = 10000;
-            road.addPoint({1200, 1000, 0});
-            road.addPoint({3000, 1550, 0});
-            road.addPoint({5000, 1200, 0});
-            road.addPoint({7300, 2000, 0});
-            road.addPoint({8500, 3500, 0});
-            road.addPoint({9400, 5000, 0});
-            road.addPoint({8500, 6500, 0});
-            road.addPoint({7000, 8090, 0});
-            road.addPoint({5000, 8800, 0});
-            road.addPoint({3200, 8020, 0});
-            road.addPoint({1500, 6500, 0});
-            road.addPoint({1200, 4120, 0});
+
+            road.addPoint({5000, 3500, 0});
+            road.addPoint({6500, 3500, 0});
+            road.addPoint({8000, 3500, 0});
+            road.addPoint({9000, 2500, 0});
+            road.addPoint({8000, 1500, 0});
+            road.addPoint({7000, 2000, 0});
+            road.addPoint({6500, 3000, 0});
+            road.addPoint({6500, 3500, 0});
+            road.addPoint({6500, 5000, 0});
+            road.addPoint({6500, 6500, 0});
+            road.addPoint({6500, 8000, 0});
+            road.addPoint({7500, 9000, 0});
+            road.addPoint({8500, 8000, 0});
+            road.addPoint({8000, 7000, 0});
+            road.addPoint({7000, 6500, 0});
+            road.addPoint({6500, 6500, 0});
+            road.addPoint({5000, 6500, 0});
+            road.addPoint({3500, 6500, 0});
+            road.addPoint({2000, 6500, 0});
+            road.addPoint({1000, 7500, 0});
+            road.addPoint({2000, 8500, 0});
+            road.addPoint({3000, 8000, 0});
+            road.addPoint({3500, 7000, 0});
+            road.addPoint({3500, 6500, 0});
+            road.addPoint({3500, 5000, 0});
+            road.addPoint({3500, 3500, 0});
+            road.addPoint({3500, 2000, 0});
+            road.addPoint({2500, 1000, 0});
+            road.addPoint({1500, 2000, 0});
+            road.addPoint({2000, 3000, 0});
+            road.addPoint({3000, 3500, 0});
+            road.addPoint({3500, 3500, 0});
+            road.addPoint({4000, 3500, 0});
             road.buildSmoothSamples();
             road.setLooped(true);
         }
+        generateOrganicBorder();
     }
 
-    [[nodiscard]] const std::vector<RoadSample>& getRoadSamples() const {
-        return road.getSamples();
-    }
     [[nodiscard]] bool isLooped() const {
         return road.isLooped() ;
     }
@@ -132,7 +150,6 @@ public:
 
     [[nodiscard]] bool isOutsideRoad(const Vector3& pos) const {
         const auto roadSamples = road.getSamples();
-        // Iterate over each segment
         for (size_t i = 0; i < roadSamples.size() - 1; ++i) {
             Vector3 p0 = roadSamples[i].pos;
             Vector3 p1 = roadSamples[i + 1].pos;
@@ -161,7 +178,10 @@ public:
         const int gridRow = pos / carsPerRow ;
         const int gridCol = pos % carsPerRow ;
 
-        int idx = (startIndex - gridRow * 4);
+        int stridePerRow = 6;
+        int stridePerCol = 2;
+
+        int idx = startIndex - ((gridRow+1) * stridePerRow + gridCol * stridePerCol);
 
         if (idx < 0) {
             idx += sampleSize;
@@ -206,11 +226,29 @@ public:
         }
 
         if (isOutsideRoad(pos)) {
-            // car.setPosition(prevPos);
-            // car.applyBounce();
-
-            car.applyBraking(std::pow(0.9995f , car.getBoostFactor()), dt * 60);
+            car.setDragMultiplier(4.0f);
+            car.setGripMultiplier(0.7f);
+            car.setRollingResistanceMultiplier(2.0f);
+            car.setMaxSpeedMultiplier(0.6f);
+        } else {
+            car.setDragMultiplier(1.0f);
+            car.setGripMultiplier(1.0f);
+            car.setRollingResistanceMultiplier(1.0f);
+            car.setMaxSpeedMultiplier(1.0f);
         }
+    }
+
+    static void generateOrganicBorder() {}
+
+    MapData snapshot() const {
+        MapData data;
+        data.mapName = filename_;
+        data.roadSamples = road.getSamples();
+        data.roadWidth   = road.getWidth();
+        data.width = width_;
+        data.height = height_;
+        data.looped = road.isLooped();
+        return data;
     }
 };
 

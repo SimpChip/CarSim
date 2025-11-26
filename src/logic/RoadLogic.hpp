@@ -4,7 +4,6 @@
 #include "threepp/threepp.hpp"
 #include <vector>
 #include <random>
-#include "data/types.h"
 
 using Vector3 = threepp::Vector3;
 
@@ -17,7 +16,7 @@ public:
         points_.push_back(point);
     }
 
-    void buildSmoothSamples(const int subdivisions = 100) {
+    void buildSmoothSamples(const int subdivisions = 200) {
         samples_.clear();
         if (points_.size() < 2) return;
 
@@ -37,6 +36,8 @@ public:
                 samples_.push_back(sample);
             }
         }
+        std::cout <<"End pos"<< samples_.back().pos << std::endl;
+        std::cout <<"Start pos "<< samples_.front().pos << std::endl;
     }
 
     [[nodiscard]] const std::vector<RoadSample>& getSamples() const { return samples_; }
@@ -48,6 +49,7 @@ private:
     float defaultWidth_;
     bool looped_;
 
+    //funnet på internett
     static Vector3 catmullRom(const Vector3& p0, const Vector3& p1,
                    const Vector3& p2, const Vector3& p3, const float t) {
         const float t2 = t * t;
@@ -58,6 +60,8 @@ private:
                        (p1*3 - p2*3 + p3 -p0) * t3) * 0.5f;
     }
 
+
+    //funnet på internett
     static Vector3 catmullRomTangent(const Vector3& p0, const Vector3& p1,
                           const Vector3& p2, const Vector3& p3, const float t) {
         const float t2 = t * t;
