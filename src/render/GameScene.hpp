@@ -32,26 +32,16 @@ public:
         buildCheckPointsVisuals(state.checkpointsData.checkpoints, state.checkpointsData.startpoint);
         buildCarVisuals(state.cars, playerModel, state.scale, resources );
         buildPickupVisuals(resources, state.pickups, state.scale);
-
-        printSceneHierarchy();
+        //printSceneHierarchy();
 
     }
 
     static void printHierarchy(const threepp::Object3D& obj, const int depth = 0) {
         const std::string indent(depth * 2, ' ');
-        std::cout << indent
-                  << "[" << obj.type() << "] "
-                  << "'" << obj.name << "' "
-                  << "visible=" << obj.visible
-                  << " pos=" << obj.position
-                  << " children=" << obj.children.size()
-                  << std::endl;
-
         for (const auto& child : obj.children) {
             if (child) printHierarchy(*child, depth + 1);
         }
     }
-
     void printSceneHierarchy() const {
         std::cout << "\n=== Scene Hierarchy ===\n";
         std::cout << "Root Scene has " << scene_->children.size() << " children\n\n";
@@ -123,16 +113,16 @@ private:
 
     void buildCarVisuals(const std::vector<CarData>& cars, const std::string& playerModel, float scale, ResourceManager& resources) {
         carVisuals_.reserve(cars.size());
-        const std::vector<std::string> colors = {"blue","green","yellow","pink","white","purple","orange","golden"};
+        const std::vector<std::string> colors = {"blue","green","yellow","pink","white","purple","orange", "gray", "darkgreen", "golden"};
 
         for (size_t i = 0; i < cars.size(); i++) {
             std::string model = (i == 0) ? playerModel : "redcar";
             std::string color = (i == 0) ? "basic" : colors[i % colors.size()];
-
             auto vis = std::make_shared<CarVisuals>(
                 model,
                 cars[i].position,
                 cars[i].rotation,
+                cars[i].carSize,
                 scale,
                 resources,
                 color
@@ -366,7 +356,7 @@ private:
         scene_->add(checkpointGroup_);
     }
 
-    void buildPickupVisuals(ResourceManager& resources, const std::vector<Pickup> &pickups, const float scale) {
+    void buildPickupVisuals(ResourceManager& resources, const std::vector<PickupData> &pickups, const float scale) {
         pickupGroup_ = threepp::Group::create();
         pickupGroup_->name = "PickupGroup";
         for (size_t i = 0; i < pickups.size(); ++i) {
@@ -378,6 +368,12 @@ private:
                     mesh = resources.cloneInstance(Dir);
                     break;
                 }
+                case PickupType::BadCoin: {
+                    std::string Dir = std::string(DATA_DIR) + "/objects/Pickups/coin.obj";
+                    mesh = resources.cloneInstance(Dir);
+                    break;
+                }
+                default: ;
             }
             if (mesh) {
                 mesh->name = "Pickup_" + std::to_string(i) + "_" + std::to_string(static_cast<int>(pickup.type));

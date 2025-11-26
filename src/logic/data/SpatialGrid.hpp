@@ -19,7 +19,7 @@ public:
     float cellSize;
     std::unordered_map<std::pair<int, int>, std::vector<T>, PairHash> grid{};
 
-    explicit SpatialGrid(float cellSize) : cellSize(cellSize) {}
+    explicit SpatialGrid(const float cellSize) : cellSize(cellSize) {}
 
     [[nodiscard]] std::pair<int, int> worldToCell(const threepp::Vector3& pos) const {
         return {static_cast<int>(pos.x / cellSize), static_cast<int>(pos.y / cellSize)};
@@ -29,7 +29,7 @@ public:
         grid[worldToCell(pos)].push_back(item);
     }
 
-    std::vector<T> queryNearby(const threepp::Vector3& pos, int radius = 1) const {
+    std::vector<T> queryNearby(const threepp::Vector3& pos, const int radius = 1) const {
         std::vector<T> result;
         auto [first, second] = worldToCell(pos);
         for (int dx = -radius; dx <= radius; ++dx) {

@@ -8,22 +8,8 @@
 #include "threepp/threepp.hpp"
 #include "CarLogic.hpp"
 #include "RoadLogic.hpp"
-#include <data/SpatialGrid.hpp>
 #include <utility>
 #include "types/data.hpp"
-
-
-enum class BorderType {
-    Canyon,
-    RollingHills,
-    Forest
-};
-
-struct WallSegment {
-    Vector3 p1;
-    Vector3 p2;
-    Vector3 normal;
-};
 
 class MapLogic {
 public:
@@ -34,14 +20,9 @@ public:
     short scale_ = 1;
     std::string filename_;
 
-    SpatialGrid<WallSegment> wallGrid;
-    std::vector<Vector3> borderPoints;
-    BorderType currentBiome = BorderType::Forest;
-
     explicit MapLogic(std::string filename) :
         road(250, true),
-        filename_(std::move(filename)),
-        wallGrid(200.0f)
+        filename_(std::move(filename))
     {
         if (filename_ == "firstMap") {
             width_ = 10000;
@@ -209,38 +190,9 @@ public:
         return {finalPos, rot, idx};
     }
 
-    void handleMapCollisions(CarLogic& car, const float dt) const {
-        const Vector3 prevPos = car.getPreviousPosition();
-        const Vector3 pos = car.getPosition();
-
-        const OBB carBox = car.getOrientedBoundingBox();
-        const auto corners = carBox.getCorners();
-        for (const auto& corner : corners) {
-            const int cx = static_cast<int>(corner.x / static_cast<float>(scale_));
-            const int cy = static_cast<int>(corner.y / static_cast<float>(scale_));
-
-            if (cx < 0 || cy < 0 || cx >= width_ || cy >= height_) {
-                car.setPosition(prevPos);
-                car.applyBounce();
-            };
-        }
-
-        if (isOutsideRoad(pos)) {
-            car.setDragMultiplier(4.0f);
-            car.setGripMultiplier(0.7f);
-            car.setRollingResistanceMultiplier(2.0f);
-            car.setMaxSpeedMultiplier(0.6f);
-        } else {
-            car.setDragMultiplier(1.0f);
-            car.setGripMultiplier(1.0f);
-            car.setRollingResistanceMultiplier(1.0f);
-            car.setMaxSpeedMultiplier(1.0f);
-        }
-    }
-
     static void generateOrganicBorder() {}
 
-    MapData snapshot() const {
+    [[nodiscard]] MapData snapshot() const {
         MapData data;
         data.mapName = filename_;
         data.roadSamples = road.getSamples();

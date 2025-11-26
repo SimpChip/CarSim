@@ -70,7 +70,7 @@ class CheckpointLogic {
             currentCheckpointIndex_ = 0;
         }
 
-        CheckpointData snapshot() const {
+        [[nodiscard]] CheckpointData snapshot() const {
             CheckpointData data;
             data.checkpoints = checkpoints_;
             data.startpoint = startCheckpoint_;

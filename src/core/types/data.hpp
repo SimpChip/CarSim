@@ -17,10 +17,14 @@ struct RoadSample {
 
 enum class PickupType {
     Coin,
+    BadCoin,
 };
+
+enum class CollisionType { Car, SpeedBoost, SlowBoost, Obstacle };
 
 // --- Car ---
 struct CarData {
+    threepp::Vector3 carSize;
     threepp::Vector3 position;
     threepp::Vector3 previousPosition;
     threepp::Vector3 forward;
@@ -31,7 +35,7 @@ struct CarData {
 };
 
 // --- Pickup ---
-struct Pickup {
+struct PickupData {
     PickupType type;
     threepp::Vector3 position;
     bool active = true;
@@ -75,7 +79,7 @@ struct GameState {
     std::vector<CarData> cars;
     MapData mapData;
     CheckpointData checkpointsData;
-    std::vector<Pickup> pickups;
+    std::vector<PickupData> pickups;
     float lapTimer;
     float lastLapTime;
 

@@ -24,7 +24,6 @@ public:
 
     void onKeyPressed(const threepp::KeyEvent evt) const {;
         switch(evt.key) {
-            case threepp::Key::Q: car_.setBoostFactor(2); break;
             case threepp::Key::W: car_.setAccelerationInput(1.0f); break;
             case threepp::Key::S: car_.setAccelerationInput(-1.0f); break;
             case threepp::Key::A: car_.setSteeringLeftActive(true); break;
@@ -84,8 +83,8 @@ public:
     void update(float dt, CarLogic& car) override {
         if (roadSamples_.empty()) return;
 
-        const Vector3 carPos = car.getPosition();
-        const Vector3 currentTargetPos = roadSamples_[targetWaypointIndex_].pos;
+        const threepp::Vector3 carPos = car.getPosition();
+        const threepp::Vector3 currentTargetPos = roadSamples_[targetWaypointIndex_].pos;
 
         if (carPos.distanceTo(currentTargetPos) < WAYPOINT_TOLERANCE + 50 * skillFactor_) {
             targetWaypointIndex_ += 5 + 10 * skillFactor_;
@@ -97,12 +96,12 @@ public:
 
         const RoadSample& targetSample = roadSamples_[targetWaypointIndex_];
 
-        const Vector3 finalTargetPos = targetSample.pos + (targetSample.right * currentLateralOffset_);
+        const threepp::Vector3 finalTargetPos = targetSample.pos + (targetSample.right * currentLateralOffset_);
 
-        Vector3 toTarget = finalTargetPos - carPos;
+        threepp::Vector3 toTarget = finalTargetPos - carPos;
         toTarget.normalize();
 
-        const Vector3 carForward = car.forwardVector();
+        const threepp::Vector3 carForward = car.forwardVector();
 
         const float baseSteeringInput = carForward.x * toTarget.y - carForward.y * toTarget.x;
 

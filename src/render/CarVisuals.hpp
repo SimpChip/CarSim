@@ -15,11 +15,19 @@
 
 class CarVisuals {
 public:
-
-    CarVisuals(std::string objectName, const threepp::Vector3 carStartPos, const float carRot, const float scale, ResourceManager& resources, const std::string &color = "basic") : objectName_(std::move(objectName)), scale_(scale)  {
+    CarVisuals(
+        std::string objectName,
+        const threepp::Vector3 carStartPos,
+        const float carRot,
+        const threepp::Vector3 carSize,
+        const float scale,
+        ResourceManager& resources,
+        const std::string &color = "basic")
+    :
+        objectName_(std::move(objectName)), scale_(scale)
+    {
         const std::string base = std::string(DATA_DIR) + "/models/" + objectName_;
         const std::string carPath = base +"/"+color+"/car.obj";
-
         if (std::filesystem::exists(carPath)) {
             try {
                 const auto proto = resources.loadPrototype(carPath);
@@ -28,8 +36,21 @@ public:
                 carMesh = std::dynamic_pointer_cast<threepp::Group>(proto->clone(true));
                 if (!carMesh) throw std::runtime_error("clone failed");
 
-                carMesh->scale = threepp::Vector3(scale_ * 1.f, scale_ * 1.f, scale_ * 1.f);
+                threepp::Box3 bounds;
+                bounds.setFromObject(*carMesh);
 
+                threepp::Vector3 size = bounds.getSize();
+
+                float scaleX = carSize.x  / size.x;
+                float scaleY = carSize.y / size.y;
+                float scaleZ = carSize.z / size.z;
+
+                carMesh->scale = threepp::Vector3(scale_ * scaleX, scale_ * scaleY, scale_ * scaleZ);
+
+                std::cout << "Car " << " size: "
+                  << carSize.x << ", "
+                  << carSize.y << ", "
+                  << carSize.z << "\n";
                 std::cout << "Car mesh loaded and cloned for instance\n";
 
             } catch (const std::exception& ex) {
@@ -104,7 +125,6 @@ public:
     std::shared_ptr<threepp::Group> getCarMesh() {
         return carMesh;
     }
-
 
     void update(const threepp::Vector3 carPos, const float carRot,const float speed, const float steer,  const float& dt) const {
 
