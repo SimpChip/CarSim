@@ -1,0 +1,79 @@
+{
+  "NORMAL": {
+    "modelDirectoryName": "redcar",
+    "materialDef": {
+      "baseColor": "#FF0000"
+    },
+
+    "wheelDefs": [
+      {
+        "filename": "wheel_fl.obj",
+        "pos": [1.05, 0.4, 1.4]
+      },
+      {
+        "filename": "wheel_fr.obj",
+        "pos": [-1.05, 0.4, 1.4]
+      },
+      {
+        "filename": "wheel_bl.obj",
+        "pos": [1.05, 0.4, -1.4]
+      },
+      {
+        "filename": "wheel_br.obj",
+        "pos": [-1.05, 0.4, -1.4]
+      }
+    ]
+  },
+  "CAMPING": {
+    "modelDirectoryName": "coolcar",
+
+    "materialDef": {
+      "baseColor": "#00FFFF"
+    },
+
+    "wheelDefs": [
+      {
+        "filename": "cool_wheel_fl.obj",
+        "pos": [1.0, 0.5, 1.05]
+      },
+      {
+        "filename": "cool_wheel_fr.obj",
+        "pos": [-1.0, 0.5, 1.05]
+      },
+      {
+        "filename": "cool_wheel_bl.obj",
+        "pos": [1.0, 0.5, -1.05]
+      },
+      {
+        "filename": "cool_wheel_br.obj",
+        "pos": [-1.0, 0.5, -1.05]
+      }
+    ]
+  },
+  "CRAZY": {
+    "modelDirectoryName": "coolcar",
+
+    "materialDef": {
+      "baseColor": "#00FFFF"
+    },
+
+    "wheelDefs": [
+      {
+        "filename": "cool_wheel_fl.obj",
+        "pos": [1.0, 0.5, 1.05]
+      },
+      {
+        "filename": "cool_wheel_fr.obj",
+        "pos": [-1.0, 0.5, 1.05]
+      },
+      {
+        "filename": "cool_wheel_bl.obj",
+        "pos": [1.0, 0.5, -1.05]
+      },
+      {
+        "filename": "cool_wheel_br.obj",
+        "pos": [-1.0, 0.5, -1.05]
+      }
+    ]
+  }
+}
