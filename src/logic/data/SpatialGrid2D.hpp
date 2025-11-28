@@ -21,15 +21,15 @@ public:
 
     explicit SpatialGrid(const float cellSize) : cellSize(cellSize) {}
 
-    [[nodiscard]] std::pair<int, int> worldToCell(const threepp::Vector3& pos) const {
+    [[nodiscard]] std::pair<int, int> worldToCell(const threepp::Vector2& pos) const {
         return {static_cast<int>(pos.x / cellSize), static_cast<int>(pos.y / cellSize)};
     }
 
-    void insert(const threepp::Vector3& pos, const T& item) {
+    void insert(const threepp::Vector2& pos, const T& item) {
         grid[worldToCell(pos)].push_back(item);
     }
 
-    std::vector<T> queryNearby(const threepp::Vector3& pos, const int radius = 1) const {
+    std::vector<T> queryNearby(const threepp::Vector2& pos, const int radius = 1) const {
         std::vector<T> result;
         auto [first, second] = worldToCell(pos);
         for (int dx = -radius; dx <= radius; ++dx) {

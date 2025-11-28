@@ -1,0 +1,64 @@
+//
+// Created by Mella on 27.11.2025.
+//
+
+#ifndef CARSIM_RACEHUD_HPP
+#define CARSIM_RACEHUD_HPP
+
+#include "types/data.hpp"
+#include <imgui.h>
+#include <iomanip>
+#include <sstream>
+
+
+class RaceHUD {
+    float finishPopUpTimer = 0.f;
+
+public:
+    void update(const float dt) {
+        if (finishPopUpTimer > 0.f) {
+            finishPopUpTimer -= dt;
+        }
+    }
+
+    void render(const LapManagerData& lapMan, const int renderCarId) {
+        auto formatTime = [](const float seconds) {
+            const int totalMillis = static_cast<int>(seconds * 1000);
+            const int minutes = totalMillis / 60000;
+            const int secs    = (totalMillis / 1000) % 60;
+            const int millis  = totalMillis % 1000;
+            std::ostringstream oss;
+            oss << std::setfill('0') << std::setw(2) << minutes << ":"
+                << std::setw(2) << secs << "." << std::setw(3) << millis;
+            return oss.str();
+        };
+
+        auto playerCar = lapMan.laptrackers.at(renderCarId);
+
+        ImGui::Begin("Race HUD", nullptr,
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground);
+        ImGui::SetWindowPos(ImVec2(15, 15));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.f, 255));
+        ImGui::SetWindowFontScale(20.f / ImGui::GetFontSize());
+        ImGui::Text("Current Lap Time: %s", formatTime(playerCar.lapStartTime).c_str());
+        if (lapMan.lapTimer > 0) {
+            ImGui::Text("Last Lap: %s", formatTime(playerCar.lastLapTime).c_str());
+            finishPopUpTimer = 3;
+        }
+        ImGui::Separator();
+        if (playerCar.lapCompleted) {
+            ImGui::Text("Checkpoint: ALL PASSED");
+        } else {
+            ImGui::Text("Checkpoint: %d / %d", playerCar.currentCheckpoint, lapMan.checkpoints.size());
+        }
+        if (finishPopUpTimer > 0) {
+            ImGui::Text("FINISHED A LAP?");
+        }
+        ImGui::PopStyleColor();
+        ImGui::SetWindowFontScale(1.0f);
+        ImGui::End();
+    }
+};
+
+#endif //CARSIM_RACEHUD_HPP
