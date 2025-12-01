@@ -1,13 +1,12 @@
 #include "core/GameManager.hpp"
-#include "core/UiManager.hpp"
+#include "core/UIManager.hpp"
 
 int main() {
     threepp::Canvas canvas("Race Instanced");
     threepp::GLRenderer renderer(canvas.size());
     renderer.setClearColor(threepp::Color::whitesmoke);
-    GameManager manager;
-    manager.attachListeners(canvas);
-    UIManager ui(canvas.windowPtr());
+
+    GameManager manager(canvas);
 
     canvas.onWindowResize([&](const threepp::WindowSize& size) {
         renderer.setSize(size);
@@ -17,7 +16,7 @@ int main() {
         const float dt = clock.getDelta();
         manager.update(dt);
         manager.render(renderer);
-        manager.handleUI(ui, dt);
+        manager.handleUI(dt);
    });
     return 0;
 }

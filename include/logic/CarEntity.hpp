@@ -1,18 +1,15 @@
-//
-// Created by Mella on 26.11.2025.
-//
-
 #ifndef CARSIM_CARENTITY_HPP
 #define CARSIM_CARENTITY_HPP
 
-#include "CarLogic.hpp"
+#include "Car.hpp"
 #include "memory"
 #include "controllers/IController.hpp"
 
 struct CarEntity {
-    std::shared_ptr<CarLogic> logic;
+    std::shared_ptr<Car> logic;
     std::unique_ptr<IController> controller;
-    CarEntity(std::shared_ptr<CarLogic> logicIn, std::unique_ptr<IController> ctrlIn)
+
+    CarEntity(std::shared_ptr<Car> logicIn, std::unique_ptr<IController> ctrlIn)
         : logic(std::move(logicIn)), controller(std::move(ctrlIn)) {}
 
     void update(const float dt) const {

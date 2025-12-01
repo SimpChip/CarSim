@@ -5,12 +5,12 @@
 #ifndef CARSIM_ICONTROLLER_HPP
 #define CARSIM_ICONTROLLER_HPP
 
-#include "logic/CarLogic.hpp"
+#include "logic/Car.hpp"
 
 class IController {
 public:
     virtual ~IController() = default;
-    virtual void update(float dt, CarLogic& car) = 0;
+    virtual void update(float dt, Car& car) = 0;
 };
 
 #endif //CARSIM_ICONTROLLER_HPP

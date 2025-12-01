@@ -3,19 +3,21 @@
 
 #include "threepp/input/KeyListener.hpp"
 #include "IController.hpp"
-#include "logic/CarLogic.hpp"
+#include "core/EventBus.hpp"
+#include "logic/Car.hpp"
 
 class PlayerController : public IController {
 
 public:
-    CarLogic& car_;
-    explicit PlayerController(CarLogic& car) : car_(car) {}
+    EventBus& bus_;
+    Car& car_;
+    explicit PlayerController(EventBus& bus ,Car& car);
 
     void onKeyPressed(threepp::KeyEvent evt) const;
 
     void onKeyReleased(threepp::KeyEvent evt) const;
 
-    void update(float dt, CarLogic& car) override {}
+    void update(float dt, Car& car) override {}
 };
 
 #endif //CARSIM_PLAYERCONTROLLER_HPP

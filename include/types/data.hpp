@@ -5,10 +5,12 @@
 #ifndef CARSIM_DATA_HPP
 #define CARSIM_DATA_HPP
 
+#include <array>
 #include <unordered_map>
 #include "threepp/math/Vector3.hpp"
+#include "threepp/math/Vector2.hpp"
 #include "vector"
-
+#include "types.hpp"
 
 struct PairHash {
     std::size_t operator()(const std::pair<int,int>& p) const noexcept {
@@ -22,36 +24,18 @@ struct RoadSample {
     threepp::Vector3 pos;
     threepp::Vector3 tangent;
     threepp::Vector3 right;
-    float width;
+    int width;
 };
 
 struct LapTracker {
-    int carId;
-    int currentLap{0};
+    int carId{};
     int currentCheckpoint{};
+    int currentLap{0};
     int nextCheckpoint{0};
     bool lapCompleted{false};
-    bool firstLap{false};
+    float currentLapTime{0.f};
     float lapStartTime{0.f};
     float lastLapTime{0.f};
-};
-
-
-
-enum class PickupType {
-    Coin,
-    BadCoin,
-};
-
-enum class CollisionType { Car, Checkpoint, SpeedBoost, SlowBoost, Obstacle };
-
-struct CollisionEnterEvent {
-    int idA, idB;
-    CollisionType typeA, typeB;
-};
-struct CollisionExitEvent {
-    int idA, idB;
-    CollisionType typeA, typeB;
 };
 
 // --- Car ---
@@ -64,6 +48,7 @@ struct CarData {
     float speed;
     float steering;
     float boostFactor;
+    std::array<threepp::Vector2, 4> corners;
 };
 
 // --- Pickup ---
@@ -82,8 +67,8 @@ struct CheckpointData {
     threepp::Vector3 forward;
     float width;
     bool start;
+    std::array<threepp::Vector2,4> corners;
 };
-
 
 // --- Map ---
 struct MapData {
@@ -96,26 +81,16 @@ struct MapData {
 };
 
 struct LapManagerData {
-    float lapTimer;
+    float raceTimer;
+    float startTimer;
+    int startIndex;
     std::vector<CheckpointData> checkpoints;
     std::unordered_map<int, LapTracker> laptrackers;
 };
 
-// --- Game ---
-struct GameState {
-    float scale;
-    std::vector<CarData> cars;
-    MapData mapData;
-    std::vector<PickupData> pickups;
-    LapManagerData lapManagerData;
-    int playerCarId;
-};
 
-// --- Map Creator ---
-struct MapCreatorState {
-    std::vector<threepp::Vector3> points;
-    int mapSize;
-    bool looped;
-};
+
+
+
 
 #endif //CARSIM_DATA_HPP

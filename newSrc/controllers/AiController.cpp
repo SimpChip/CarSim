@@ -1,21 +1,35 @@
+#include <algorithm>
+
 #include "controllers/AIController.hpp"
 #include <cmath>
+#include <iostream>
 
-AIController::AIController(const std::vector<RoadSample>& samples, size_t startIndex, float skill)
+AIController::AIController(const std::vector<RoadSample>& samples, const threepp::Vector3 pos, const float skill)
     : roadSamples_(samples),
-      targetWaypointIndex_(startIndex + 1),
       skillFactor_(skill),
       randomGenerator_(std::random_device{}()),
-      randomDist_(0.0f, 1.0f) {}
+      randomDist_(0.0f, 1.0f) {
+    targetWaypointIndex_ = findNearestSample(samples, pos);
+}
 
 void AIController::calculateNewOffset() {
-    const RoadSample& targetSample = roadSamples_[targetWaypointIndex_];
+    const RoadSample targetSample = roadSamples_[targetWaypointIndex_];
     const float MAX_LATERAL_OFFSET = targetSample.width * 0.9f;
     const float noise = (randomDist_(randomGenerator_) * 2.0f) - 1.0f; // -1 to 1
     currentLateralOffset_ = noise * (1.0f - skillFactor_) * MAX_LATERAL_OFFSET;
 }
 
-void AIController::update(float dt, CarLogic& car) {
+size_t AIController::findNearestSample(const std::vector<RoadSample>& samples, const threepp::Vector3& pos) const {
+    size_t nearest = 0;
+    float minDist = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < samples.size(); ++i) {
+        float d = pos.distanceTo(samples[i].pos);
+        if (d < minDist) { minDist = d; nearest = i; }
+    }
+    return nearest;
+}
+
+void AIController::update(float dt, Car& car) {
     if (roadSamples_.empty()) return;
 
     const threepp::Vector3 carPos = car.getPosition();

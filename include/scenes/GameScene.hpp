@@ -1,27 +1,24 @@
-
-
 #ifndef CARSIM_GAMESCENE_HPP
 #define CARSIM_GAMESCENE_HPP
-
 
 #include "threepp/threepp.hpp"
 #include "core/ResourceManager.hpp"
 #include "visuals/CarVisuals.hpp"
 #include "types/data.hpp"
-#include "IScene.hpp"
 #include <vector>
 #include "random"
 
-class GameScene : public IScene {
+class GameScene {
 public:
     std::shared_ptr<threepp::Scene> scene_;
     GameScene(
-        const GameState& state,
+        const GameSnapShot& state,
         ResourceManager& resources,
         const std::string& playerModel
     ) :
         scene_(threepp::Scene::create())
     {
+
         setupLighting();
         setupFog();
         setupCamera(state.cars.front().position);
@@ -32,7 +29,6 @@ public:
         buildCarVisuals(state.cars, playerModel, state.scale, resources );
         buildPickupVisuals(resources, state.pickups, state.scale);
         //printSceneHierarchy();
-
     }
     static void printHierarchy(const threepp::Object3D& obj, const int depth = 0) {
         const std::string indent(depth * 2, ' ');
@@ -49,7 +45,8 @@ public:
         }
     }
 
-    void update(const GameState& state, const float dt) const {
+    void update(const GameSnapShot& state, const float dt) const {
+
         const size_t count = std::min(state.cars.size(), carVisuals_.size());
         for (size_t i = 0; i < count; i++) {
             const auto& car = state.cars[i];
@@ -68,8 +65,54 @@ public:
                                          pickup.position.y, 0);
             }
         }
+        const auto& lapMan = state.lapManagerData;
+        if (!lapMan.laptrackers.empty()) {
+            const auto& tracker = lapMan.laptrackers.at(state.playerCarId);
+            const int currentCp = tracker.currentCheckpoint;
+            const int nextCp    = tracker.nextCheckpoint;
+            const int startCp   = lapMan.startIndex;
+            const bool raceStarted = lapMan.startTimer <= 0.f && lapMan.raceTimer > 0.f;
+
+            for (size_t childIdx = 0; childIdx < checkpointGroup_->children.size(); ++childIdx) {
+                constexpr int stride = 2;
+                const int cpIdx = static_cast<int>(childIdx / stride);
+                const auto& child = checkpointGroup_->children[childIdx];
+                const auto mat = std::dynamic_pointer_cast<threepp::MeshBasicMaterial>(child->material());
+                if (!mat) {
+                    std::cerr << "Checkpoint child material missing at index " << childIdx << std::endl;
+                    continue;
+                }
+                if (cpIdx == startCp) {
+                    if (lapMan.startTimer > 0.f) {
+                        // Pre-race countdown
+                        if (lapMan.startTimer > 2.f) {
+                            mat->color = threepp::Color::red;
+                        } else if (lapMan.startTimer > 1.f) {
+                            mat->color = threepp::Color::yellow;
+                        } else {
+                            mat->color = threepp::Color::limegreen;
+                        }
+                    } else if (cpIdx == nextCp && raceStarted) {
+                        mat->color = threepp::Color::magenta;
+                    } else if (cpIdx == currentCp && raceStarted) {
+                        mat->color = threepp::Color::white;
+                    } else {
+                        mat->color = threepp::Color::blue;
+                    }
+                }
+                else {
+                    if (cpIdx == currentCp) {
+                        mat->color = threepp::Color::cyan;
+                    } else if (cpIdx == nextCp) {
+                        mat->color = threepp::Color::yellowgreen;
+                    } else {
+                        mat->color = threepp::Color::firebrick;
+                    }
+                }
+            }
+        }
     }
-    void render(threepp::GLRenderer& renderer) override {
+    void render(threepp::GLRenderer& renderer) const {
         if (scene_ && camera_) {
             renderer.render(*scene_, *camera_);
         }
@@ -78,7 +121,7 @@ public:
 private:
     float scale_ = 1.0f;
     float cameraUpdateInput = 0.f;
-    float cameraDistance_   = 4.f;
+    float cameraDistance_   = 5.5f;
     float cameraHeight_     = 4.f;
 
     std::shared_ptr<threepp::PerspectiveCamera> camera_;
@@ -118,13 +161,13 @@ private:
             std::string model = (i == 0) ? playerModel : "redcar";
             std::string color = (i == 0) ? "basic" : colors[i % colors.size()];
             auto vis = std::make_shared<CarVisuals>(
-                model,
+                "redcar",
+                "basic",
                 cars[i].position,
                 cars[i].rotation,
                 cars[i].carSize,
                 scale,
-                resources,
-                color
+                resources
             );
             carVisuals_.push_back(vis);;
             scene_->add(vis->getCarMesh());
@@ -138,7 +181,6 @@ private:
             std::cerr << "Failed to load grass texture\n";
             groundMat->color = threepp::Color::green;
         } else {
-            std::cout << grassTexture.get()->name << "\n";
             grassTexture->wrapS = grassTexture->wrapT = threepp::TextureWrapping::Repeat;
             grassTexture->repeat.set(50, 50);
             groundMat->color = threepp::Color::white;
@@ -179,10 +221,10 @@ private:
             std::mt19937 gen(rd());
             std::uniform_real_distribution<float> dist(-0.5f, -0.1f);
 
-            float zOffset1 = dist(gen);
-            float zOffset2 = dist(gen);
-            float zOffset3 = dist(gen);
-            float zOffset4 = dist(gen);
+            const float zOffset1 = dist(gen);
+            const float zOffset2 = dist(gen);
+            const float zOffset3 = dist(gen);
+            const float zOffset4 = dist(gen);
             vertices.insert(vertices.end(), {innerLeft.x, innerLeft.y, innerLeft.z + zOffset1});
             vertices.insert(vertices.end(), {outerLeft.x, outerLeft.y, outerLeft.z + zOffset2});
             vertices.insert(vertices.end(), {innerRight.x, innerRight.y, innerRight.z + zOffset3});
@@ -310,33 +352,20 @@ private:
         checkpointGroup_ = threepp::Group::create();
         checkpointGroup_->name = "CheckpointGroup";
 
-        for (auto& check : checkpoints) {
+        for (const auto&[position, forward, width, start, corners] : checkpoints) {
 
-            float halfWidth = check.width * 0.5f;
-            float halfDepth = 10.f;
-
-            auto OBBgeometry = threepp::BoxGeometry::create(check.width, 50.f, 50.f);
-            auto OBBmaterial = threepp::MeshBasicMaterial::create();
-            OBBmaterial->color = check.start ? threepp::Color::red : threepp::Color::cyan;
-            OBBmaterial->wireframe = true;
-
-            auto mesh = threepp::Mesh::create(OBBgeometry, OBBmaterial);
-
-            mesh->position.set(check.position.x, check.position.y, 1.f);
-            threepp::Vector3 fwd = check.forward;
+            threepp::Vector3 fwd = forward;
             fwd.normalize();
             threepp::Vector3 lateral(-fwd.y, fwd.x, 0); ;
-            float angle = std::atan2(lateral.y, lateral.x);
-
-            mesh->rotation.z = angle;
-            checkpointGroup_->add(mesh);
 
             const auto geometry = threepp::CylinderGeometry::create(10, 10, 100);
             const auto material = threepp::MeshBasicMaterial::create();
-            material->color = threepp::Color::saddlebrown;
 
-            const threepp::Vector3 leftEdge  = check.position - lateral * (check.width * 0.5f);
-            const threepp::Vector3 rightEdge = check.position + lateral * (check.width * 0.5f);
+            material->color = start ? threepp::Color::indianred : threepp::Color::green;
+            material->wireframe = true;
+
+            const threepp::Vector3 leftEdge  = position - lateral * (width * 0.5f);
+            const threepp::Vector3 rightEdge = position + lateral * (width * 0.5f);
 
             auto meshLeft = threepp::Mesh::create(geometry, material);
             meshLeft->position = leftEdge;

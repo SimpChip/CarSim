@@ -1,134 +1,101 @@
 
-
 #include "core/GameManager.hpp"
+#include "logic/GameLogicSystem.hpp"
+#include "scenes/MenuScene.hpp"
+#include "scenes/GameScene.hpp"
+#include "types/SnapShots.hpp"
+#include "types/events.hpp"
 
-GameManager::GameManager()
-    : keyPressed_(threepp::KeyAdapter::Mode::KEY_PRESSED,
-                  [&](const threepp::KeyEvent evt) { onKeyPressed(evt); }),
-      keyReleased_(threepp::KeyAdapter::Mode::KEY_RELEASED,
-                   [&](const threepp::KeyEvent evt) { onKeyReleased(evt); }),
-      gameSnapshot_(),
+GameManager::GameManager(threepp::Canvas& canvas )
+    : gameSnapShot_(), mapMakerSnapShot_(), uiManager_(canvas.windowPtr()), inputManager_(bus_),
       resources(std::make_unique<ResourceManager>()) {
+    canvas.addKeyListener(inputManager_);
+    subscribe();
     startMenu();
 }
 
-void GameManager::attachListeners(threepp::Canvas& canvas) {
-    canvas.addKeyListener(keyPressed_);
-    canvas.addKeyListener(keyReleased_);
+void GameManager::subscribe() {
+    bus_.subscribe<PauseEvent>([this](const PauseEvent&) {
+        if (state_ == AppState::PLAYING) {
+            pause();
+        } else if (state_ == AppState::PAUSED) {
+            resume();
+        }
+    });
 }
+
 
 void GameManager::startMenu() {
     menuScene_ = std::make_unique<MenuScene>(*resources);
     state_ = AppState::MENU;
 }
-
-void GameManager::startRace(const std::string& mapName, const std::string& modelName) {
-    gameLogic.reset();
-    gameScene_.reset();
-    gameLogic = std::make_unique<GameLogic>(mapName, aiCount_);
-    if (gameLogic) {
-        gameLogic->update(0);
-        gameSnapshot_ = gameLogic->snapshot();
-        gameScene_ = std::make_unique<GameScene>(gameSnapshot_, *resources, modelName);
-    } else {
-        std::cout << "no game" << std::endl;
-    }
-    state_ = AppState::STARTING;
-    setStartTimer(6);
+void GameManager::startRace(const std::string& map, int aiCount, const std::string& model) {
+    bus_ = EventBus{};
+    subscribe();
+    gameSystem_ = std::make_unique<GameLogicSystem>(bus_, *resources, map, aiCount, 0);
+    gameSnapShot_ = gameSystem_->snapshot();
+    gameScene_ = std::make_unique<GameScene>(gameSnapShot_, *resources, model);
+    state_ = AppState::PLAYING;
 }
-
 void GameManager::startMapMaker() {
-    mapCreatorLogic = std::make_unique<MapCreatorLogic>();
+    mapMakerSystem_ = std::make_unique<MapMakerSystem>();
+    mapMakerScene_ = std::make_unique<MapMakerScene>(*resources);
     state_ = AppState::MAKER;
 }
+void GameManager::pause() {
+    state_ = AppState::PAUSED;
+}
+void GameManager::resume() {
+    state_ = AppState::PLAYING;
+}
 
-void GameManager::setStartTimer(const float startTimer) { startTimer_ = startTimer; }
 int GameManager::getAiCount() const { return aiCount_; }
 void GameManager::setAiCount(const int aiCount) { aiCount_ = aiCount; }
 
-void GameManager::pauseGame() { if (state_ == AppState::PLAYING) state_ = AppState::PAUSED; }
-void GameManager::resumeGame() { if (state_ == AppState::PAUSED) state_ = AppState::PLAYING; }
-
-void GameManager::onKeyPressed(const threepp::KeyEvent& evt) {
-    if (const auto* pc = playerController()) pc->onKeyPressed(evt);
-    if (evt.key == threepp::Key::P) {
-        if (state_ == AppState::PLAYING) pauseGame();
-        else if (state_ == AppState::PAUSED) resumeGame();
-    }
-}
-
-void GameManager::onKeyReleased(const threepp::KeyEvent& evt) const {
-    if (const auto* pc = playerController()) pc->onKeyReleased(evt);
-}
-
 void GameManager::update(const float dt) {
-
-    if (state_ == AppState::PLAYING && gameLogic && gameScene_) {
-        gameLogic->update(dt);
-        gameSnapshot_ = gameLogic->snapshot();
-        gameScene_->update(gameSnapshot_, dt);
-    } else if (state_ == AppState::STARTING && gameLogic && gameScene_) {
-        gameScene_->update(gameSnapshot_, dt);
-        if (startTimer_ >= 0) {
-            startTimer_ -= dt;
-        }
-        else {
-            gameLogic->preUpdate(dt);
-            state_ = AppState::PLAYING;
-        }
-    }
-}
-
-void GameManager::handleUI(UIManager& ui, const float dt) {
-    UIManager::startFrame();
     switch (state_) {
-        case AppState::MENU: {
-            std::string selectedMap, selectedModel;
-            auto [start, maker, aiCount] = UIManager::renderMainMenu(selectedMap, selectedModel, getAiCount());
-            if (start) startRace(selectedMap, selectedModel);
-            if (maker) startMapMaker();
-            if (aiCount != aiCount_) aiCount_ = aiCount;
-            break;
-        }
-        case AppState::STARTING:
         case AppState::PLAYING: {
-            const auto& car = gameSnapshot_.cars[0];
-            UIManager::renderOverlay(car.speed, car.boostFactor, car.position, "map");
-            ui.renderCheckPointOverlay(gameSnapshot_, dt);
-            if (startTimer_ > 0.f) UIManager::renderStartTimer(startTimer_, dt);
+            gameSystem_->update(dt);
+            gameSnapShot_ = gameSystem_->snapshot();
+            gameScene_->update(gameSystem_->snapshot(), dt);
             break;
         }
         case AppState::MAKER: {
-            const auto [save, undo, clear, goback, looped, newMapSize] =
-                UIManager::renderMakerMenu(mapCreatorLogic->getPoints(),
-                                           mapCreatorLogic->getMapSize(),
-                                           mapCreatorLogic->isLooped());
-            if (save) MapCreatorLogic::saveMap();
-            if (undo) mapCreatorLogic->undoLastPoint();
-            if (clear) mapCreatorLogic->clearPoints();
-            if (goback) startMenu();
-            if (newMapSize != mapCreatorLogic->getMapSize()) mapCreatorLogic->setMapSize(newMapSize);
-            mapCreatorLogic->setLooped(looped);
+            mapMakerSystem_->update(dt);
+            mapMakerSnapShot_ = mapMakerSystem_->snapshot();
+            mapMakerScene_->update( dt);
+            break;
+        }
+        case AppState::MENU: {
             break;
         }
         case AppState::PAUSED: {
-            auto [resume, quitToMenu] = UIManager::renderPauseMenu();
-            if (resume) resumeGame();
-            if (quitToMenu) startMenu();
             break;
         }
-        default: ;
+        default: std::cerr << "Unknown state" << std::endl;
     }
-    UIManager::endFrame();
+}
+
+void GameManager::handleUI(const float dt) {
+    uiManager_.startFrame();
+    switch (state_) {
+        case AppState::MENU:   uiManager_.renderMainMenuOverlay(commands(), resources, aiCount_); break;
+        case AppState::PLAYING: uiManager_.renderCheckPointOverlay(commands(), gameSnapShot_); break;
+        case AppState::MAKER: uiManager_.renderMapMakerOverlay(commands(), mapMakerSnapShot_); break;
+        case AppState::PAUSED: uiManager_.renderPauseMenuOverlay(commands()); break;
+        default: std::cerr << "unknown state" << std::endl;
+    }
+    uiManager_.endFrame();
 }
 
 void GameManager::render(threepp::GLRenderer& renderer) const {
-    if (state_ == AppState::PLAYING || state_ == AppState::STARTING && gameScene_) gameScene_->render(renderer);
-    if (state_ == AppState::MENU && menuScene_) menuScene_->render(renderer);
+    if (gameScene_ && ( AppState::PLAYING == state_ || AppState::PAUSED == state_)) {
+        gameScene_->render(renderer);
+    } else if ( menuScene_ && AppState::MENU == state_ ) {
+        menuScene_->render(renderer);
+    } else if ( mapMakerScene_ && AppState::MAKER == state_ ) {
+        mapMakerScene_->render(renderer);
+    }
 }
 
-PlayerController* GameManager::playerController() const {
-    if (!gameLogic || gameSnapshot_.cars.empty()) return nullptr;
-    return dynamic_cast<PlayerController*>(gameLogic->getPlayerCar().controller.get());
-}
 
