@@ -45,9 +45,8 @@ public:
 
     void update(float dt) {}
 
-
-    [[nodiscard]] MapMakerSnapshot snapshot() const {
-        MapMakerSnapshot data;
+    [[nodiscard]] MapMakerSnap snapshot() const {
+        MapMakerSnap data;
         data.points = pointPositions_;
         data.mapSize = mapSize_;
         data.looped = looped_;

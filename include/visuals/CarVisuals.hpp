@@ -2,7 +2,7 @@
 #define CARSIM_CARVISUALS_HPP
 
 #include <iostream>
-#include "core/ResourceManager.hpp"
+#include "../helpers/ResourceManager.hpp"
 #include "threepp/geometries/BoxGeometry.hpp"
 #include "threepp/materials/MeshStandardMaterial.hpp"
 #include "threepp/math/MathUtils.hpp"

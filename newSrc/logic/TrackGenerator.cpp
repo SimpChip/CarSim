@@ -1,5 +1,4 @@
 #include "logic/TrackGenerator.hpp"
-
 #include "threepp/input/KeyListener.hpp"
 
 TrackGenerator::TrackGenerator(MapSystem& map) : map_(map) {
@@ -30,7 +29,7 @@ CheckpointResult TrackGenerator::generateCheckpoints(const int startIndex,const 
             const float targetPercentOfSeg = (nextTarget - accumulated) / segLen;
             auto center = samples[i-1].pos + (samples[i].pos - samples[i-1].pos) * targetPercentOfSeg;
             const auto dir = (samples[i].pos - samples[i-1].pos).normalize();
-            checkpoints.emplace_back(std::make_shared<Checkpoint>(center, dir, roadWidth));
+            checkpoints.emplace_back(std::make_shared<Checkpoint>(center, dir, roadWidth, 50));
             if (startIndex == counter) {
                 startCheckpointIndex = i;
             }
@@ -42,6 +41,8 @@ CheckpointResult TrackGenerator::generateCheckpoints(const int startIndex,const 
     }
     return CheckpointResult{checkpoints, startCheckpointIndex};
 };
+
+//TODO Make helper function for both genrate pickup and checkpoints, using the same approch for generation
 
 std::vector<std::shared_ptr<Pickup>> TrackGenerator::generatePickups() const {
     const auto samples = map_.road.getSamples();
@@ -75,7 +76,7 @@ std::vector<std::shared_ptr<Pickup>> TrackGenerator::generatePickups() const {
             auto offset = perp * (roadWidth * 0.25f);
 
             auto pickupPos = leftSide ? center + offset : center - offset;
-            pickups.emplace_back(std::make_shared<Pickup>(PickupType::Coin, pickupPos));
+            pickups.emplace_back(std::make_shared<Pickup>(PickupType::Coin, pickupPos, 10));
 
             leftSide = !leftSide;
             nextTarget += pickupSpacing;
@@ -139,7 +140,7 @@ size_t TrackGenerator::sampleAtDistance(
     const std::vector<RoadSample>& samples,
     const size_t startIdx,
     const float backDistance
-) const {
+) {
     float remaining = backDistance;
     size_t idx = startIdx;
     while (remaining > 0 && idx > 0) {

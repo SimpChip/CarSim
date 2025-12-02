@@ -1,6 +1,5 @@
 #include "controllers/PlayerController.hpp"
 
-#include <iostream>
 
 #include "types/events.hpp"
 

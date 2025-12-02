@@ -48,6 +48,6 @@ FetchContent_Declare(json
 FetchContent_MakeAvailable(json)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
+add_subdirectory(newSrc)
 
 file(COPY ${CMAKE_SOURCE_DIR}/resources DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-add_subdirectory(newSrc)

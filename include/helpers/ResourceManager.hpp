@@ -1,21 +1,13 @@
-//
-// Created by Mella on 27.11.2025.
-//
-
 #ifndef CARSIM_RESOURCEMANAGER_HPP
 #define CARSIM_RESOURCEMANAGER_HPP
 
-#include <ranges>
-#include "threepp/loaders/OBJLoader.hpp"
 #include "threepp/objects/Mesh.hpp"
 #include "FileManager.hpp"
-
 
 struct ModelData {
     std::shared_ptr<threepp::Group> body;
     std::vector<std::shared_ptr<threepp::Group>> wheels;
 };
-
 
 class ResourceManager {
 public:

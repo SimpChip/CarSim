@@ -4,7 +4,7 @@
 #include "threepp/input/KeyListener.hpp"
 #include "IController.hpp"
 #include "core/EventBus.hpp"
-#include "logic/Car.hpp"
+#include "../entities/Car.hpp"
 
 class PlayerController : public IController {
 

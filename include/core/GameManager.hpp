@@ -1,19 +1,17 @@
 #ifndef CARSIM_GAMEMANAGER_HPP
 #define CARSIM_GAMEMANAGER_HPP
 
-
-
-#include "threepp/renderers/GLRenderer.hpp"
-#include "threepp/canvas/Canvas.hpp"
-
-#include "core/ResourceManager.hpp"
-#include "logic/GameLogicSystem.hpp"
-#include "scenes/MapMakerScene.hpp"
-#include "UIManager.hpp"
-#include "scenes/GameScene.hpp"
-#include "scenes/MenuScene.hpp"
+#include "helpers/ResourceManager.hpp"
+#include "core/UIManager.hpp"
 #include "core/InputManager.hpp"
 #include "controllers/Commands.hpp"
+#include "logic/GameLogicSystem.hpp"
+#include "scenes/MenuScene.hpp"
+#include "scenes/GameScene.hpp"
+#include "scenes/MapMakerScene.hpp"
+
+#include "types/gameSnapshots.hpp"
+#include "types/mapMakerSnapshots.hpp"
 
 enum class AppState {
     MENU,
@@ -25,7 +23,7 @@ enum class AppState {
 
 class GameManager {
 public:
-    explicit GameManager(threepp::Canvas& canvas);
+    explicit GameManager(threepp::Canvas* canvas);
 
     GameCommands commands() {
         return {
@@ -61,17 +59,16 @@ private:
     float globScale = 8.f;
     int aiCount_ = 0;
 
-    // std::unique_ptr<IScene> currentScene_;
-    // std::unique_ptr<ILogic> currentLogic_;
-    // std::unique_ptr<ILogicSnapshot> currentLogicSnapshot_;
-
     std::unique_ptr<GameLogicSystem> gameSystem_;
-    GameSnapShot gameSnapShot_;
+    GameSnap gameSnap_;
     std::unique_ptr<GameScene> gameScene_;
 
+
+    //TODO MapMaker not implmented fully yet
     std::unique_ptr<MapMakerSystem> mapMakerSystem_;
-    MapMakerSnapshot mapMakerSnapShot_;
+    MapMakerSnap mapMakerSnap_;
     std::unique_ptr<MapMakerScene> mapMakerScene_;
+
     std::unique_ptr<MenuScene> menuScene_;
 
     UIManager uiManager_;

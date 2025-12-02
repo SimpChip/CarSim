@@ -37,20 +37,17 @@ public:
         type_ = type;
     }
 
-    virtual ~ICollidable() = default;
     [[nodiscard]] int getId() const { return id_; }
     bool isActive() const { return active_;}
-
     [[nodiscard]] threepp::Vector2 getPosition2D() const {return {position_.x, position_.y};}
     [[nodiscard]] threepp::Vector2 getPrevPosition2D() const {return {position_.x, position_.y};}
-
     [[nodiscard]] threepp::Vector3 getPosition() const {return position_;}
     [[nodiscard]] threepp::Vector3 getPrevPosition() const {return prevPosition_;}
-
     [[nodiscard]] float getRotation() const {return rotation_;}
     [[nodiscard]] CollisionType getCollisionType() const {return type_;};
-    [[nodiscard]] virtual OBB2D getBoundingBox() const = 0;
 
+    virtual ~ICollidable() = default;
+    [[nodiscard]] virtual OBB2D getBoundingBox() const = 0;
     virtual void onCollision(const std::shared_ptr<ICollidable>& other, float dt) = 0;
 
 protected:

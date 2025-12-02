@@ -1,6 +1,3 @@
-//
-// Created by Mella on 27.11.2025.
-//
 
 #ifndef CARSIM_DATA_HPP
 #define CARSIM_DATA_HPP
@@ -20,6 +17,9 @@ struct PairHash {
     }
 };
 
+
+
+
 struct RoadSample {
     threepp::Vector3 pos;
     threepp::Vector3 tangent;
@@ -38,7 +38,6 @@ struct LapTracker {
     float lastLapTime{0.f};
 };
 
-// --- Car ---
 struct CarData {
     threepp::Vector3 carSize;
     threepp::Vector3 position;
@@ -51,7 +50,6 @@ struct CarData {
     std::array<threepp::Vector2, 4> corners;
 };
 
-// --- Pickup ---
 struct PickupData {
     PickupType type;
     threepp::Vector3 position;
@@ -61,7 +59,6 @@ struct PickupData {
     float respawnTimer = 0.0f;
 };
 
-// --- Checkpoint ---
 struct CheckpointData {
     threepp::Vector3 position;
     threepp::Vector3 forward;
@@ -70,7 +67,6 @@ struct CheckpointData {
     std::array<threepp::Vector2,4> corners;
 };
 
-// --- Map ---
 struct MapData {
     std::string mapName;
     std::vector<RoadSample> roadSamples;
@@ -87,10 +83,5 @@ struct LapManagerData {
     std::vector<CheckpointData> checkpoints;
     std::unordered_map<int, LapTracker> laptrackers;
 };
-
-
-
-
-
 
 #endif //CARSIM_DATA_HPP

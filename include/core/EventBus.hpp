@@ -5,20 +5,23 @@
 #include <functional>
 #include <vector>
 #include <any>
+#include <ranges>
 #include <unordered_map>
 #include <typeindex>
 
+// EventBus: Event bus implementation
+// Initial structure generated with AI assistance, adapted for project needs
 
 class EventBus {
 public:
     using CallbackId = std::size_t;
 
     template<typename Event>
-    CallbackId subscribe(std::function<void(const Event&)> cb) {
+    CallbackId subscribe(std::function<void(const Event&)> callback) {
         auto& vec = subscribers_[std::type_index(typeid(Event))];
         CallbackId id = ++nextId_;
-        vec.emplace_back(id, [cb](const void* e) {
-            cb(*static_cast<const Event*>(e));
+        vec.emplace_back(id, [callback](const void* event) {
+            callback(*static_cast<const Event*>(event));
         });
         return id;
     }
@@ -34,11 +37,11 @@ public:
     }
 
     template<typename Event>
-    void publish(const Event& e) {
-        auto it = subscribers_.find(std::type_index(typeid(Event)));
+    void publish(const Event& event) {
+        const auto it = subscribers_.find(std::type_index(typeid(Event)));
         if (it != subscribers_.end()) {
-            for (auto& [id, cb] : it->second) {
-                cb(&e);
+            for (auto &callback: it->second | std::views::values) {
+                callback(&event);
             }
         }
     }

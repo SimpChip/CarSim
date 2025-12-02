@@ -1,8 +1,8 @@
 #ifndef CARSIM_TRACKGENERATOR_HPP
 #define CARSIM_TRACKGENERATOR_HPP
 #include <vector>
-#include "Checkpoint.hpp"
-#include "Pickup.hpp"
+#include "entities/Checkpoint.hpp"
+#include "entities/Pickup.hpp"
 #include "MapSystem.hpp"
 
 struct CheckpointResult {
@@ -25,14 +25,14 @@ class TrackGenerator {
         [[nodiscard]] std::vector<std::pair<threepp::Vector3, float>> generateStartGrid(int amount, int cols, size_t startIdx) const;
 
     private:
-    size_t sampleAtDistance(
-        const std::vector<RoadSample>& samples,
-        size_t startIdx,
-        float backDistance ) const;
+        static size_t sampleAtDistance(
+            const std::vector<RoadSample>& samples,
+            size_t startIdx,
+            float backDistance );
 
-        MapSystem& map_;
-        std::vector<RoadSample> roadSamples_;
-        std::vector<RoadSample> roadSamplesReversed_;
-};
+            MapSystem& map_;
+            std::vector<RoadSample> roadSamples_;
+            std::vector<RoadSample> roadSamplesReversed_;
+        };
 
 #endif //CARSIM_TRACKGENERATOR_HPP

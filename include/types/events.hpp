@@ -3,7 +3,7 @@
 
 #include "types/types.hpp"
 #include "threepp/input/KeyListener.hpp"
-
+#include <string>
 
 struct KeyPressedEvent {
     const threepp::KeyEvent evt;
@@ -41,9 +41,7 @@ struct StartRaceEvent {
     std::string model;
     int aiCount;
 };
-
 struct StartMapMakerEvent { };
-
 struct PauseEvent { };
 struct ResumeEvent { };
 

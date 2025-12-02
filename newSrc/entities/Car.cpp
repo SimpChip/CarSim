@@ -1,6 +1,7 @@
-#include "logic/Car.hpp"
+#include "entities/Car.hpp"
 #include <algorithm>
 #include <iostream>
+#include "types/gameSnapshots.hpp"
 
 Car::Car(const threepp::Vector3& startPos, const float rotation, const float scale)
       : ICollidable(CollisionType::Car, startPos, rotation), scale_(scale) {
@@ -139,10 +140,8 @@ void Car::updateVelocity(const float dt) {
     if (boostFactor_ > 1) boostFactor_ *= 0.994f;
     else if (boostFactor_ < 1) boostFactor_ *= 1.1f;
 
-
     const float forwardSpeed = velocity_.dot(forwardVector());
     float finalAccelerationMagnitude = 0;
-
 
     if (accelerationInput > 0.0f) {
         if (forwardSpeed < 0.0f) {
@@ -186,7 +185,6 @@ void Car::applySideFriction(const float dt) {
     const float forwardSpeed = velocity_.dot(forward);
     threepp::Vector3 lateral = velocity_ - forward * forwardSpeed;
 
-
     constexpr float BASE_GRIP = 0.98f;
     constexpr float DRIFT_SLIDE = 0.85f;
     const float steeringMagnitude = std::abs(currentSteeringInput);
@@ -211,15 +209,15 @@ void Car::clampSpeed() {
 }
 
 
-CarData Car::snapshot() const {
-    CarData data;
-    data.position = position_;
-    data.forward = forwardVector();
-    data.rotation = rotation_;
-    data.boostFactor = boostFactor_;
-    data.speed = velocity_.length();
-    data.carSize = size_;
-    data.steering = currentSteeringInput;
-    data.corners = getBoundingBox().getCorners();
-    return data;
+CarSnap Car::snapshot() const {
+    CarSnap snap;
+    snap.size = size_;
+    snap.position = position_;
+    snap.prevPosition = prevPosition_;
+    snap.forward = forwardVector();
+    snap.rotation = rotation_;
+    snap.speed = velocity_.length();
+    snap.steering = currentSteeringInput;
+    snap.boostFactor = boostFactor_;
+    return snap;
 }
