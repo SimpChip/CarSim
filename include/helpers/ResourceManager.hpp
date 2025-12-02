@@ -4,11 +4,6 @@
 #include "threepp/objects/Mesh.hpp"
 #include "FileManager.hpp"
 
-struct ModelData {
-    std::shared_ptr<threepp::Group> body;
-    std::vector<std::shared_ptr<threepp::Group>> wheels;
-};
-
 class ResourceManager {
 public:
     ResourceManager() {

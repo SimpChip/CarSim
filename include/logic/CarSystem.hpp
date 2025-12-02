@@ -11,7 +11,7 @@
 
 class CarSystem {
 public:
-    explicit CarSystem(EventBus& bus) : bus_(bus) {};
+    explicit CarSystem(EventBus& bus);
 
     void addPlayerCar(const threepp::Vector3& pos, float rot);
 

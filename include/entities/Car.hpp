@@ -6,7 +6,7 @@
 
 class Car : public ICollidable {
 public:
-    Car(const threepp::Vector3& startPos, float rotation, float scale);
+    Car(const threepp::Vector3& startPos, float rotation);
     void update(float dt);
     void applyVelocity(const threepp::Vector3& vel);
 
@@ -30,24 +30,22 @@ private:
     threepp::Vector3 size_ = {20, 40, 15};
     threepp::Vector3 velocity_{0,0,0};
 
-    float scale_;
-    float accelerationSpeed, brakeSpeed, baseMaxSpeed;
-    float steeringEaseRate = 6.f;
-    float boostFactor_ = 1;
+    float accelerationSpeed_, brakeSpeed_, baseMaxSpeed_;
+    float steeringEaseRate_ = 6.f;
 
-    float rollingResistance;
-    float drag;
+    float rollingResistance_, drag_, basegrip_, driftSlide_;
 
     float dragMultiplier_ = 1.0f;
     float gripMultiplier_ = 1.0f;
     float rollingResistanceMultiplier_ = 1.0f;
     float maxSpeedMultiplier_ = 1.0f;
+    float boostFactor_ = 1;
 
-    float accelerationInput = 0;
-    float targetSteeringInput = 0.0f;
-    float currentSteeringInput = 0.0f;
-    bool isSteeringLeftActive = false;
-    bool isSteeringRightActive = false;
+    float accelerationInput_ = 0;
+    float targetSteeringInput_ = 0.0f;
+    float currentSteeringInput_ = 0.0f;
+    bool isSteeringLeftActive_ = false;
+    bool isSteeringRightActive_ = false;
 
     void updateTargetSteering();
     void updateRotation(float dt);

@@ -46,7 +46,6 @@ public:
 
     void subscribe();
 
-    [[nodiscard]] int getAiCount() const;
     void setAiCount(int aiCount);
 
     void update(float dt);

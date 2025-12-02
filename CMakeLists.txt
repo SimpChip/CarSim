@@ -42,12 +42,25 @@ target_include_directories(
 find_package(OpenGL REQUIRED)
 target_link_libraries(imgui PUBLIC glfw OpenGL::GL)
 
+#  --- nlohmann Setup ---
 include(FetchContent)
 FetchContent_Declare(json
         URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
 FetchContent_MakeAvailable(json)
 
+# -- catch2 Setup ---
+include(FetchContent)
+FetchContent_Declare(
+        catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.5.0
+)
+FetchContent_MakeAvailable(catch2)
+
 include_directories(${PROJECT_SOURCE_DIR}/include)
-add_subdirectory(newSrc)
+add_subdirectory(src)
+
+enable_testing()
+add_subdirectory(tests)
 
 file(COPY ${CMAKE_SOURCE_DIR}/resources DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})

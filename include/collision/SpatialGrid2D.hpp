@@ -38,13 +38,13 @@ public:
 
     [[nodiscard]] Cell cellFor(const threepp::Vector2& pos) const { return worldToCell(pos); }
 
-    void insert(const threepp::Vector2& pos, const T& item) {
-        insertCell(worldToCell(pos), item);
-    }
-
-    void remove(const threepp::Vector2& pos, const T& item) {
-        removeCell(worldToCell(pos), item);
-    }
+    // void insert(const threepp::Vector2& pos, const T& item) {
+    //     insertCell(worldToCell(pos), item);
+    // }
+    //
+    // void remove(const threepp::Vector2& pos, const T& item) {
+    //     removeCell(worldToCell(pos), item);
+    // }
 
     void insertCell(const Cell& key, const T& item) {
         auto &bucket = grid[key];
@@ -80,6 +80,7 @@ public:
         }
         return result;
     }
+private:
 };
 
 #endif //CARSIM_SPATIALGRID_HPP

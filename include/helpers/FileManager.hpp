@@ -5,31 +5,11 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <threepp/math/Vector3.hpp>
-#include <threepp/objects/Group.hpp>
 
-struct MapConfig {
-    std::string name;
-    std::string type;
-    std::vector<threepp::Vector3> roadPoints;
-    bool looped;
-    int roadWidth;
-    int width;
-    int height;
-    int checkpoints;
-};
+#include "types/mapConfig.hpp"
+#include "types/model.hpp"
 
 
-struct ModelVariant {
-    std::string color;
-    std::shared_ptr<threepp::Group> body;
-};
-
-struct ModelEntry {
-    std::string name;
-    std::vector<std::string> wheelPaths;
-    std::unordered_map<std::string, std::string> colorBodies;
-};
 
 class FileManager {
 public:

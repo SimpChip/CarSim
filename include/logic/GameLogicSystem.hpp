@@ -25,7 +25,7 @@ private:
     CollisionManager collisionManager_;
     TrackGenerator trackGenerator_;
 
-    void generateWorld(int aiCount, int startIdx);
+    void generateWorld(int aiCount, int startIdx, int numCp);
     void registerAllSystems();
 };
 
