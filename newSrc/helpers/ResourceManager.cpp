@@ -1,7 +1,11 @@
 
-#include "core/ResourceManager.hpp"
+#include "helpers/ResourceManager.hpp"
+
+#include <ranges>
+
 #include "iostream"
 #include "threepp/loaders/TextureLoader.hpp"
+#include "threepp/loaders/OBJLoader.hpp"
 
 
 //Textures
@@ -13,7 +17,7 @@ void ResourceManager::loadAllTextures() {
     }
     for (auto& file : std::filesystem::directory_iterator(root)) {
         if (file.is_regular_file()) {
-            if (file.path().extension() == ".png" || file.path().extension() == ".jpg") {
+            if (file.path().extension() == ".png") {
                 loadTexture(file.path().string());
             }
         }
@@ -21,11 +25,9 @@ void ResourceManager::loadAllTextures() {
 }
 std::shared_ptr<threepp::Texture> ResourceManager::loadTexture(const std::string &path) {
     threepp::TextureLoader tl;
-    std::string key = std::filesystem::path(path).stem().string();
-
+    const std::string key = std::filesystem::path(path).stem().string();
     auto [it, inserted] = textures_.try_emplace(key, nullptr);
     if (!inserted) return it->second;
-
     it->second = tl.load(path);
     return it->second;
 }

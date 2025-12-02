@@ -1,11 +1,7 @@
-//
-// Created by Mella on 27.11.2025.
-//
-
 #ifndef CARSIM_ICONTROLLER_HPP
 #define CARSIM_ICONTROLLER_HPP
 
-#include "logic/Car.hpp"
+#include "entities/Car.hpp"
 
 class IController {
 public:

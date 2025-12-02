@@ -2,16 +2,17 @@
 #define CARSIM_MAPCREATORSCENE_HPP
 
 #include <threepp/threepp.hpp>
-#include "IScene.hpp"
 #include "logic/MapMakerSystem.hpp"
 
+//not finished!!! dont loook!
+
+//TODO move logic into MapMakerSystem, MapMakerscene shall only render Data from a MapmakerSnapshot
 class MapMakerScene {
 public:
-    explicit MapMakerScene(ResourceManager& resources)
+    explicit MapMakerScene(ResourceManager& rm)
         :
           scene_(threepp::Scene::create()) {
         mapSize_ = 20;
-
         scene_->background = threepp::Color::black;
 
         const auto mat = threepp::MeshBasicMaterial::create();
@@ -21,6 +22,7 @@ public:
         plane_ = threepp::Mesh::create(
             threepp::PlaneGeometry::create(mapSize_, mapSize_), mat
         );
+
         plane_->position.set(mapSize_/2.f, mapSize_/2.f, -1);
         scene_->add(plane_);
 
@@ -54,7 +56,7 @@ public:
         }
     }
 
-    void resizeCamera(int width, int height) {
+    void resizeCamera(const int width, const int height) const {
         const float aspect = static_cast<float>(width) / static_cast<float>(height);
         const float halfSize = mapSize_ / 2.f;
 

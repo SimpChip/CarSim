@@ -7,27 +7,18 @@
 
 
 #include <types/data.hpp>
-#include "Pickup.hpp"
+#include "../entities/Pickup.hpp"
+#include "types/gameSnapshots.hpp"
 
 class PickupSystem {
 public:
-    PickupSystem() {};
+    PickupSystem();
 
-    [[nodiscard]] const std::vector<std::shared_ptr<Pickup>>& getPickups() const { return pickups_; }
+    [[nodiscard]] const std::vector<std::shared_ptr<Pickup>>& getPickups() const;
 
-    void setPickups(const std::vector<std::shared_ptr<Pickup>>& pickups) {
-        pickups_ = pickups;
-    };
+    void setPickups(const std::vector<std::shared_ptr<Pickup>>& pickups);
 
-    [[nodiscard]] std::vector<PickupData> snapshot() const {
-        std::vector<PickupData> data;
-        data.reserve(pickups_.size());
-        for (const auto& p : pickups_) {
-            data.push_back(p->snapshot());
-        }
-        return data;
-    }
-
+    [[nodiscard]] std::vector<PickupSnap> snapshot() const;
 private:
     std::vector<std::shared_ptr<Pickup>> pickups_;
 };

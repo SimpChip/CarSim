@@ -2,10 +2,9 @@
 #define CARSIM_MENUSCENE_HPP
 
 #include "iostream"
-#include "core/ResourceManager.hpp"
-#include "IScene.hpp"
+#include "helpers/ResourceManager.hpp"
 
-class MenuScene : public IScene {
+class MenuScene {
     public:
     explicit MenuScene(const ResourceManager& resources) : scene_(threepp::Scene::create()) {
         scene_->background = threepp::Color::lightblue;
@@ -30,13 +29,13 @@ class MenuScene : public IScene {
         plane->position = threepp::Vector3(0,0,-1);
         scene_->add(plane);
     }
-    void render(threepp::GLRenderer &renderer) override {
+
+    void render(threepp::GLRenderer &renderer) const {
         if (scene_ && camera_) {
             renderer.render(*scene_, *camera_);
         }
     };
 
-    void update(ILogicSnapshot& snap, float dt) override {}
 private:
     std::shared_ptr<threepp::Scene> scene_;
     std::shared_ptr<threepp::OrthographicCamera> camera_;

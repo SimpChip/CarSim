@@ -1,7 +1,3 @@
-//
-// Created by Mella on 10.11.2025.
-//
-
 #ifndef CARSIM_SPATIALGRID_HPP
 #define CARSIM_SPATIALGRID_HPP
 
@@ -9,7 +5,9 @@
 #include <algorithm>
 
 
-//MOSTLY GENERATED WITH MICROSOFT COPILOT
+// SpatialGrid2D: Spatial hash implementation
+// Initial structure generated with AI assistance, adapted for project needs
+
 template<typename T>
 class SpatialGrid2D {
 public:

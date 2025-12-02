@@ -10,6 +10,7 @@
 class PauseMenuUI {
 public:
 
+    PauseMenuUI() = default;
     void render(const GameCommands& cmd) const {
         ImGui::Begin("Pause Menu");
         ImGui::Text("Game Paused");

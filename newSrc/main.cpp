@@ -1,12 +1,11 @@
 #include "core/GameManager.hpp"
-#include "core/UIManager.hpp"
 
 int main() {
     threepp::Canvas canvas("Race Instanced");
     threepp::GLRenderer renderer(canvas.size());
     renderer.setClearColor(threepp::Color::whitesmoke);
 
-    GameManager manager(canvas);
+    GameManager manager(&canvas);
 
     canvas.onWindowResize([&](const threepp::WindowSize& size) {
         renderer.setSize(size);

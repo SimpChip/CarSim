@@ -1,49 +1,30 @@
 #ifndef CARSIM_CARSYSTEM_HPP
 #define CARSIM_CARSYSTEM_HPP
 
-#include "CarEntity.hpp"
-#include "controllers/AiController.hpp"
-#include "controllers/PlayerController.hpp"
+#include "../entities/CarEntity.hpp"
+#include "core/EventBus.hpp"
+#include "threepp/threepp.hpp"
+#include <memory>
+
+#include "types/gameSnapshots.hpp"
+
 
 class CarSystem {
 public:
     explicit CarSystem(EventBus& bus) : bus_(bus) {};
 
-    void addPlayerCar(const threepp::Vector3& pos, const float rot) {
-        auto logic = std::make_shared<Car>(pos, rot, 8);
-        playerCarId_ = logic->getId();
-        playerCarIndex_ = cars_.size();
-        auto entity = std::make_unique<CarEntity>(std::move(logic), nullptr);
-        Car& logicRef = *entity->logic;
-        entity->controller = std::make_unique<PlayerController>(bus_,logicRef);
-        cars_.emplace_back(std::move(entity));
-    }
+    void addPlayerCar(const threepp::Vector3& pos, float rot);
 
-    void addAICar(const threepp::Vector3& pos, const float rot, const std::vector<RoadSample>& samples, const int startTargetidx, const float skill) {
-        auto logic = std::make_shared<Car>(pos, rot, 8);
-        auto entity = std::make_unique<CarEntity>(std::move(logic), nullptr);
-        entity->controller = std::make_unique<AIController>(samples, pos, skill);
-        cars_.emplace_back(std::move(entity));
-    }
+    void addAICar(const threepp::Vector3& pos, float rot, const std::vector<RoadSample>& samples,int startTargetidx,float skill);
 
-    [[nodiscard]] CarEntity& getPlayerCar() const {
-        return *cars_[playerCarIndex_];
-    }
-    [[nodiscard]] std::vector<std::shared_ptr<CarEntity>> getCars() const {
-        return cars_;
-    }
-    [[nodiscard]] int getPlayerCarID() const {
-        return playerCarId_;
-    }
+    [[nodiscard]] CarEntity& getPlayerCar() const;
 
-    [[nodiscard]] std::vector<CarData> snapshot() const {
-        std::vector<CarData> data;
-        data.reserve(cars_.size());
-        for (const auto& car : cars_) {
-            data.push_back(car->logic->snapshot());
-        }
-        return data;
-    }
+    [[nodiscard]] std::vector<std::shared_ptr<CarEntity>> getCars() const;
+
+    [[nodiscard]] int getPlayerCarID() const;
+
+    [[nodiscard]] std::vector<CarSnap> snapshot() const;
+
 private:
     EventBus& bus_;
     std::vector<std::shared_ptr<CarEntity>> cars_;

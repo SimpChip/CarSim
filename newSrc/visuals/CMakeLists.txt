@@ -1,5 +1,6 @@
-file(GLOB VISUALS_SRC *.cpp)
-add_library(visuals ${VISUALS_SRC})
+add_library(visuals
+        ${PROJECT_SOURCE_DIR}/newSrc/visuals/CarVisuals.cpp
+)
+
 target_include_directories(visuals PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(visuals PUBLIC threepp::threepp)
-target_compile_definitions(visuals PUBLIC DATA_DIR="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources")

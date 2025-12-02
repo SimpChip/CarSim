@@ -2,6 +2,8 @@
 #define CARSIM_CARLOGIC_HPP
 
 #include "collision/ICollidable.hpp"
+#include "types/gameSnapshots.hpp"
+
 class Car : public ICollidable {
 public:
     Car(const threepp::Vector3& startPos, float rotation, float scale);
@@ -10,9 +12,9 @@ public:
 
     [[nodiscard]] threepp::Vector3 getVelocity() const;
     [[nodiscard]] threepp::Vector3 forwardVector() const;
-    [[nodiscard]] OBB2D getBoundingBox() const override;
-    [[nodiscard]] CarData snapshot() const;
+    [[nodiscard]] CarSnap snapshot() const;
 
+    [[nodiscard]] OBB2D getBoundingBox() const override;
     void onCollision(const std::shared_ptr<ICollidable>& other, float dt) override;
 
     void setDragMultiplier(float m);
